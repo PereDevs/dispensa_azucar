@@ -23,34 +23,26 @@ flowchart.node('error_motor', 'Detener proceso\nNotificar error', shape='box')
 flowchart.node('notificar', 'Notificar al usuario:\n"Tu azúcar está listo"', shape='box')
 flowchart.node('fin', 'Fin del proceso\nReiniciar sistema', shape='ellipse')
 
-# Definir las conexiones
-flowchart.edges([
-    ('start', 'taza'),
-    ('taza', 'taza_no', {'label': 'No'}),
-    ('taza', 'camara', {'label': 'Sí'}),
-    ('taza_no', 'taza'),
-    ('camara', 'rostro'),
-    ('rostro', 'reintentar', {'label': 'No'}),
-    ('reintentar', 'camara'),
-    ('rostro', 'registro', {'label': 'Sí'}),
-    ('registro', 'manual', {'label': 'No'}),
-    ('registro', 'preferencias', {'label': 'Sí'}),
-    ('manual', 'azucar'),
-    ('preferencias', 'azucar'),
-    ('azucar', 'sin_azucar', {'label': 'No'}),
-    ('azucar', 'dispensar', {'label': 'Sí'}),
-    ('sin_azucar', 'azucar'),
-    ('dispensar', 'motor'),
-    ('motor', 'error_motor', {'label': 'No'}),
-    ('motor', 'notificar', {'label': 'Sí'}),
-    ('notificar', 'fin')
-])
+# Definir conexiones usando edge()
+flowchart.edge('start', 'taza')
+flowchart.edge('taza', 'taza_no', label='No')
+flowchart.edge('taza', 'camara', label='Sí')
+flowchart.edge('taza_no', 'taza')
+flowchart.edge('camara', 'rostro')
+flowchart.edge('rostro', 'reintentar', label='No')
+flowchart.edge('reintentar', 'camara')
+flowchart.edge('rostro', 'registro', label='Sí')
+flowchart.edge('registro', 'manual', label='No')
+flowchart.edge('registro', 'preferencias', label='Sí')
+flowchart.edge('manual', 'azucar')
+flowchart.edge('preferencias', 'azucar')
+flowchart.edge('azucar', 'sin_azucar', label='No')
+flowchart.edge('azucar', 'dispensar', label='Sí')
+flowchart.edge('sin_azucar', 'azucar')
+flowchart.edge('dispensar', 'motor')
+flowchart.edge('motor', 'error_motor', label='No')
+flowchart.edge('motor', 'notificar', label='Sí')
+flowchart.edge('notificar', 'fin')
 
 # Renderizar el diagrama
-output_path = '/mnt/data/Dispensador_Inteligente_Azucar'
-flowchart.render(output_path, format='png', cleanup=True)
-
-output_path + '.png'
-
-
-
+flowchart.render('/mnt/data/Dispensador_Inteligente_Azucar', format='png', cleanup=False)
