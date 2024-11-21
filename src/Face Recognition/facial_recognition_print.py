@@ -4,10 +4,11 @@ import numpy as np
 from picamera2 import Picamera2
 import time
 import pickle
+import os
 
 # Load pre-trained face encodings
 print("[INFO] Cargando codificaciones...")
-with open("encodings.pickle", "rb") as f:
+with open("src/Face Recognition/encodings.pickle", "rb") as f:
     data = pickle.loads(f.read())
 known_face_encodings = data["encodings"]
 known_face_names = data["names"]

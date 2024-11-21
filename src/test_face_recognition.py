@@ -4,7 +4,7 @@ import numpy as np
 
 def main():
     # Carga una imagen de tu rostro conocida
-    known_image = face_recognition.load_image_file("./pere_7.jpg")
+    known_image = face_recognition.load_image_file("/home/admin/dispensa_azucar/src/pere_7.jpg")
     known_encoding = face_recognition.face_encodings(known_image)[0]
 
     # Inicializa la cámara
@@ -46,7 +46,6 @@ def main():
         # Muestra el frame en una ventana
         cv2.imshow("Reconocimiento Facial", frame)
 
-        # Salir con 'q'
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break
 
