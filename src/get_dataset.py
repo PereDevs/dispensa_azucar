@@ -7,7 +7,7 @@ def capture_images(username):
     picam2.start()
     
     
-    for i in range(10):
+    for i in range(11,20):
         image_path = f"{username}_{i+1}.jpg"
         picam2.capture_file(image_path)
         print(f"Imagen capturada: {image_path}")
