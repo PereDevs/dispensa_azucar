@@ -4,8 +4,10 @@ import face_recognition
 import pickle
 import cv2
 
+print(f"Current working directory: {os.getcwd()}")
+
 print("[INFO] start processing faces...")
-imagePaths = list(paths.list_images("dataset"))
+imagePaths = list(paths.list_images("/home/admin/dispensa_azucar/src/Face Recognition/dataset/Pere"))
 knownEncodings = []
 knownNames = []
 
