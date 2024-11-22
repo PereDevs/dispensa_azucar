@@ -4,7 +4,6 @@ import numpy as np
 from picamera2 import Picamera2
 import time
 import pickle
-import os
 
 # Load pre-trained face encodings
 print("[INFO] Cargando codificaciones...")

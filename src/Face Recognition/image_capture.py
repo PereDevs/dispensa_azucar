@@ -3,92 +3,129 @@ from datetime import datetime
 from picamera2 import Picamera2
 from model_training import *
 import time
+from PIL import Image
 
-# Cambiar este valor al nombre de la persona
-  
-
-import os
-
-def create_folder(name):
-    # Especificar la ruta completa
+def create_folder(id):
+    """Crea la carpeta para un usuario basado en su ID."""
     dataset_folder = "/home/admin/dispensa_azucar/src/Face Recognition/dataset"
-    
-    # Crear la carpeta dataset si no existe
     if not os.path.exists(dataset_folder):
         os.makedirs(dataset_folder)
-    
-    # Crear la carpeta específica de la persona dentro de dataset
-    person_folder = os.path.join(dataset_folder, name)
+    person_folder = os.path.join(dataset_folder, id)
     if not os.path.exists(person_folder):
         os.makedirs(person_folder)
-    
     return person_folder
 
+def get_existing_images(folder):
+    """Obtiene una lista de imágenes existentes en la carpeta."""
+    return {file for file in os.listdir(folder) if file.endswith(".jpg")}
 
-def capture_photos(name, max_photos=5, delay_between_photos=2):
+def get_processed_images(folder):
+    """Lee el archivo de imágenes ya procesadas. Si no existe, lo crea vacío."""
+    processed_file = os.path.join(folder, "processed_images.txt")
+    if not os.path.exists(processed_file):
+        # Si el archivo no existe, lo crea vacío
+        open(processed_file, "w").close()
+        return set()
+    with open(processed_file, "r") as f:
+        return set(f.read().strip().splitlines())
+
+def save_processed_images(folder, processed_images):
+    """Guarda todas las imágenes procesadas en el archivo."""
+    processed_file = os.path.join(folder, "processed_images.txt")
+    with open(processed_file, "w") as f:
+        for image in sorted(processed_images):
+            f.write(f"{image}\n")
+
+def process_new_images(folder, id):
     """
-    Captura fotos de una persona con Picamera2 y las guarda en un folder.
-    :param name: Nombre de la persona.
-    :param max_photos: Número máximo de fotos a capturar.
-    :param delay_between_photos: Tiempo en segundos entre capturas.
+    Procesa solo las imágenes nuevas y añade los encodings de las nuevas.
     """
-    folder = create_folder(name)
-    
+    all_images = get_existing_images(folder)
+    processed_images = get_processed_images(folder)
+    new_images = all_images - processed_images
+
+    if not new_images:
+        print("[INFO] No hay imágenes nuevas para procesar.")
+        return
+
+    print(f"[INFO] Procesando {len(new_images)} imágenes nuevas.")
+
+    for image_name in new_images:
+        image_path = os.path.join(folder, image_name)
+        try:
+            # Llama a tu función de procesamiento de encodings
+            procesar_persona(image_path, id)  # Ajusta según tu implementación
+            print(f"[INFO] Procesado: {image_name}")
+            # Agrega la imagen procesada al conjunto
+            processed_images.add(image_name)
+        except Exception as e:
+            print(f"[ERROR] No se pudo procesar {image_name}: {e}")
+
+    # Actualizar el archivo con todas las imágenes procesadas
+    save_processed_images(folder, processed_images)
+    print(f"[INFO] Registro actualizado. Total de imágenes procesadas: {len(processed_images)}.")
+
+def capture_photos(name, id, max_photos=5, delay_between_photos=2):
+    """
+    Captura fotos del usuario y las guarda en su carpeta.
+    """
+    folder = create_folder(id)
+    existing_images = get_existing_images(folder)
+
     # Inicializar la cámara
     picam2 = Picamera2()
     picam2.configure(picam2.create_preview_configuration(main={"format": 'RGB888', "size": (640, 480)}))
     picam2.start()
-
-    # Permitir que la cámara se caliente
     time.sleep(2)
 
     photo_count = 0
-    print(f"[INFO] Iniciando captura de fotos para {name}. Capturando {max_photos} fotos con {delay_between_photos}s de intervalo.")
+    print(f"[INFO] Iniciando captura de fotos para {name} con ID {id}.")
     
     try:
         while photo_count < max_photos:
-            # Capturar un frame de la cámara
             frame = picam2.capture_array()
-
-            # Guardar la imagen con un timestamp
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"{name}_{timestamp}.jpg"
+            filename = f"{id}_{name}_{timestamp}.jpg"
             filepath = os.path.join(folder, filename)
+
+            if filename in existing_images:
+                print(f"[INFO] Imagen duplicada: {filename}. Saltando.")
+                continue
+
             with open(filepath, "wb") as f:
-                # Guardar la imagen como archivo JPEG
-                from PIL import Image
                 image = Image.fromarray(frame)
                 image.save(f, format="JPEG")
+
             photo_count += 1
             print(f"[INFO] Foto {photo_count} guardada: {filepath}")
-
-            # Esperar antes de la próxima captura
+            existing_images.add(filename)
             time.sleep(delay_between_photos)
     
     except KeyboardInterrupt:
-        print("[INFO] Captura interrumpida por el usuario.")
+        print("[INFO] Captura interrumpida.")
     
     finally:
-        # Detener la cámara
         picam2.stop()
         print(f"[INFO] Captura completada. Total de fotos guardadas: {photo_count}.")
+    return photo_count
 
 if __name__ == "__main__":
-    pname =input("Nombre:")
-    papellidos = input("Apellidos:")
-    pid = input("Dame un ID para test:")
-    pnameall = pname.lower()+papellidos.lower()
+    pname = input("Nombre: ")
+    pid = input("ID: ")
+    pnameall = pname.lower()
     
-    # Temporizador de cuenta atrás antes de la captura
-    countdown = 5  # Número de segundos para la cuenta atrás
-    print(f"Voy a capturar unas fotos tuyas en: {countdown} segundos.")
+    countdown = 5
+    print(f"Captura en: {countdown} segundos.")
     for i in range(countdown, 0, -1):
-        print(f"{i}...")  # Imprimir el tiempo restante
-        time.sleep(1)  # Esperar 1 segundo entre cada número
+        print(f"{i}...")
+        time.sleep(1)
 
-    # Mensaje final antes de iniciar la captura
-    print("¡Capturando las fotos ahora!")
-    
-    
-    capture_photos(name=pnameall,  max_photos=5, delay_between_photos=2)
-    procesar_persona(pnameall,pid)
+    # Captura nuevas fotos
+    nuevas_fotos = capture_photos(name=pnameall, id=pid, max_photos=5, delay_between_photos=2)
+
+    if nuevas_fotos > 0:
+        print("[INFO] Añadiendo encodings de nuevas imágenes.")
+        folder = create_folder(pid)
+        process_new_images(folder, pid)
+    else:
+        print("[INFO] No hay nuevas imágenes para añadir.")

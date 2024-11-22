@@ -13,10 +13,9 @@ def procesar_persona(nombre, user_id, path="/home/admin/dispensa_azucar/src/Face
     :param user_id: ID único del usuario.
     """
     # Construir la ruta del dataset para la persona
-    dataset_path = os.path.join(path, nombre)
-    
-    # Ruta para guardar encodings.pickle en la carpeta dataset, fuera de la subcarpeta del usuario
+    dataset_path = os.path.join(path, user_id)
     encodings_path = os.path.join(path, "encodings.pickle")
+    processed_file = os.path.join(dataset_path, "processed_images.txt")
 
     print(f"[INFO] Entrenando para la persona: {nombre}")
     print(f"Dataset path: {dataset_path}")
@@ -35,6 +34,13 @@ def procesar_persona(nombre, user_id, path="/home/admin/dispensa_azucar/src/Face
         print("[ERROR] No se encontraron imágenes en el dataset.")
         return
 
+    # Cargar imágenes ya procesadas desde el archivo processed_images.txt
+    if os.path.exists(processed_file):
+        with open(processed_file, "r") as f:
+            processed_images = set(f.read().strip().splitlines())
+    else:
+        processed_images = set()
+
     # Inicializar listas para nombres, encodings e IDs
     knownEncodings = []
     knownNames = []
@@ -43,14 +49,23 @@ def procesar_persona(nombre, user_id, path="/home/admin/dispensa_azucar/src/Face
     # Verificar si ya existen encodings previos y cargarlos
     if os.path.exists(encodings_path):
         print("[INFO] Cargando encodings existentes...")
-        with open(encodings_path, "rb") as f:
-            data = pickle.load(f)
-            knownEncodings = data.get("encodings", [])
-            knownNames = data.get("names", [])
-            knownIDs = data.get("ids", [])
+        try:
+            with open(encodings_path, "rb") as f:
+                data = pickle.load(f)
+                knownEncodings = data.get("encodings", [])
+                knownNames = data.get("names", [])
+                knownIDs = data.get("ids", [])
+        except Exception as e:
+            print(f"[WARNING] No se pudieron cargar encodings existentes: {e}")
 
     # Procesar cada imagen
+    new_processed_images = []
     for (i, imagePath) in enumerate(imagePaths):
+        image_name = os.path.basename(imagePath)
+        if image_name in processed_images:
+            print(f"[INFO] Imagen ya procesada, saltando: {image_name}")
+            continue
+
         print(f"[INFO] Processing image {i + 1}/{len(imagePaths)}: {imagePath}")
         
         # Cargar la imagen y convertir a RGB
@@ -72,8 +87,16 @@ def procesar_persona(nombre, user_id, path="/home/admin/dispensa_azucar/src/Face
         # Agregar cada encoding junto con su nombre e ID
         for encoding in encodings:
             knownEncodings.append(encoding)
-            knownNames.append(nombre)
+            knownNames.append(nombre)  # Registra el nombre del usuario
             knownIDs.append(user_id)  # Añadir el ID del usuario
+
+        # Registrar la imagen como procesada
+        new_processed_images.append(image_name)
+
+    # Actualizar el archivo processed_images.txt
+    with open(processed_file, "a") as f:
+        for image_name in new_processed_images:
+            f.write(f"{image_name}\n")
 
     # Serializar los encodings en un archivo
     print("[INFO] Serializing encodings...")
@@ -82,10 +105,3 @@ def procesar_persona(nombre, user_id, path="/home/admin/dispensa_azucar/src/Face
         pickle.dump(data, f)
 
     print(f"[INFO] Training complete. Encodings saved to '{encodings_path}'")
-
-# Ejemplo de uso
-#if __name__ == "__main__":
-#    base_path = "/home/admin/dispensa_azucar/src/Face Recognition/dataset"
-#    person_name = "Antonio"
-#    user_id = 123  # ID único para el usuario Antonio (puedes cambiarlo)
-#    procesar_persona(base_path, person_name, user_id)

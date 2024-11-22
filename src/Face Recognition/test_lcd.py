@@ -21,7 +21,7 @@ try:
     lcd.clear()
     for i in range(10):
         lcd.write_string(f"Contador: {i}")
-        sleep(1)
+        sleep(3)
         lcd.clear()
 
 except KeyboardInterrupt:
