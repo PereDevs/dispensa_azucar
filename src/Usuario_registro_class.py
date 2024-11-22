@@ -13,11 +13,13 @@ class UsuarioRegistro:
         :param db_path: Ruta a la base de datos SQLite.
         :param encodings_path: Ruta al archivo pickle para guardar los encodings.
         """
+                
         self.db_path = db_path
         self.encodings_path = encodings_path
         self.picam2 = Picamera2()  # Inicializar Picamera2
         self.picam2.configure(self.picam2.create_preview_configuration(main={"format": "RGB888", "size": (640, 480)}))
         self.picam2.start()
+        print(f"[DEBUG] Valor de encodings_path al inicializar: {self.encodings_path}")
 
     def _connect_db(self):
         """
@@ -67,6 +69,8 @@ class UsuarioRegistro:
         :param user_id: ID del usuario en la base de datos.
         :param face_encoding: Encoding facial del usuario.
         """
+        print(f"[DEBUG] Verificando archivo de encodings en: {self.encodings_path}")
+
         if os.path.exists(self.encodings_path):
             # Cargar encodings existentes
             with open(self.encodings_path, "rb") as f:

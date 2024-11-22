@@ -8,7 +8,7 @@ import os
 
 # Load pre-trained face encodings
 print("[INFO] Cargando codificaciones...")
-with open("src/Face Recognition/encodings.pickle", "rb") as f:
+with open("/home/admin/dispensa_azucar/src/Face Recognition/dataset/encodings.pickle", "rb") as f:
     data = pickle.loads(f.read())
 known_face_encodings = data["encodings"]
 known_face_names = data["names"]

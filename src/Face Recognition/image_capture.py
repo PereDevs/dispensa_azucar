@@ -1,62 +1,94 @@
-import cv2
 import os
 from datetime import datetime
 from picamera2 import Picamera2
+from model_training import *
 import time
 
-# Change this to the name of the person you're photographing
-PERSON_NAME = "Pere"  
+# Cambiar este valor al nombre de la persona
+  
+
+import os
 
 def create_folder(name):
-    dataset_folder = "dataset"
+    # Especificar la ruta completa
+    dataset_folder = "/home/admin/dispensa_azucar/src/Face Recognition/dataset"
+    
+    # Crear la carpeta dataset si no existe
     if not os.path.exists(dataset_folder):
         os.makedirs(dataset_folder)
     
+    # Crear la carpeta específica de la persona dentro de dataset
     person_folder = os.path.join(dataset_folder, name)
     if not os.path.exists(person_folder):
         os.makedirs(person_folder)
+    
     return person_folder
 
-def capture_photos(name):
+
+def capture_photos(name, max_photos=5, delay_between_photos=2):
+    """
+    Captura fotos de una persona con Picamera2 y las guarda en un folder.
+    :param name: Nombre de la persona.
+    :param max_photos: Número máximo de fotos a capturar.
+    :param delay_between_photos: Tiempo en segundos entre capturas.
+    """
     folder = create_folder(name)
     
-    # Initialize the camera
+    # Inicializar la cámara
     picam2 = Picamera2()
-    picam2.configure(picam2.create_preview_configuration(main={"format": 'XRGB8888', "size": (640, 480)}))
+    picam2.configure(picam2.create_preview_configuration(main={"format": 'RGB888', "size": (640, 480)}))
     picam2.start()
 
-    # Allow camera to warm up
+    # Permitir que la cámara se caliente
     time.sleep(2)
 
     photo_count = 0
+    print(f"[INFO] Iniciando captura de fotos para {name}. Capturando {max_photos} fotos con {delay_between_photos}s de intervalo.")
     
-    print(f"Taking photos for {name}. Press SPACE to capture, 'q' to quit.")
-    
-    while True:
-        # Capture frame from Pi Camera
-        frame = picam2.capture_array()
-        
-        # Display the frame
-        #cv2.imshow('Capture', frame)
-        #print(frame)
-        
-        key = cv2.waitKey(1) & 0xFF
-        
-        if key == ord(' '):  # Space key
-            photo_count += 1
+    try:
+        while photo_count < max_photos:
+            # Capturar un frame de la cámara
+            frame = picam2.capture_array()
+
+            # Guardar la imagen con un timestamp
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"{name}_{timestamp}.jpg"
             filepath = os.path.join(folder, filename)
-            cv2.imwrite(filepath, frame)
-            print(f"Photo {photo_count} saved: {filepath}")
-        
-        elif key == ord('q'):  # Q key
-            break
+            with open(filepath, "wb") as f:
+                # Guardar la imagen como archivo JPEG
+                from PIL import Image
+                image = Image.fromarray(frame)
+                image.save(f, format="JPEG")
+            photo_count += 1
+            print(f"[INFO] Foto {photo_count} guardada: {filepath}")
+
+            # Esperar antes de la próxima captura
+            time.sleep(delay_between_photos)
     
-    # Clean up
-    cv2.destroyAllWindows()
-    picam2.stop()
-    print(f"Photo capture completed. {photo_count} photos saved for {name}.")
+    except KeyboardInterrupt:
+        print("[INFO] Captura interrumpida por el usuario.")
+    
+    finally:
+        # Detener la cámara
+        picam2.stop()
+        print(f"[INFO] Captura completada. Total de fotos guardadas: {photo_count}.")
 
 if __name__ == "__main__":
-    capture_photos(PERSON_NAME)
+    pname =input("Nombre:")
+    papellidos = input("Apellidos:")
+    pid = input("Dame un ID para test:")
+    pnameall = pname.lower()+papellidos.lower()
+    
+    # Temporizador de cuenta atrás antes de la captura
+    countdown = 5  # Número de segundos para la cuenta atrás
+    print(f"Voy a capturar unas fotos tuyas en: {countdown} segundos.")
+    for i in range(countdown, 0, -1):
+        print(f"{i}...")  # Imprimir el tiempo restante
+        time.sleep(1)  # Esperar 1 segundo entre cada número
+
+    # Mensaje final antes de iniciar la captura
+    print("¡Capturando las fotos ahora!")
+    
+    
+    capture_photos(name=pnameall,  max_photos=5, delay_between_photos=2)
+    procesar_persona(pnameall,pid)

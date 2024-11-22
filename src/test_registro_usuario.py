@@ -14,6 +14,8 @@ encodings_path = "encodings.pickle"
 
 # Crear una instancia de UsuarioRegistro
 registro = UsuarioRegistro(db_config, encodings_path)
+print(f"Ruta de encodings_path: {os.path.abspath(encodings_path)}")
+
 
 try:
     # Registrar un usuario nuevo
