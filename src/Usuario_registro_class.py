@@ -7,7 +7,7 @@ import mysql.connector
 
 
 class UsuarioRegistro:
-    def __init__(self, db_path, encodings_path):
+    def __init__(self, db_path, encodings_path = '/home/admin/dispensa_azucar/src/Face Recognition/dataset'):
         """
         Clase para registrar usuarios y manejar encodings.
         :param db_path: Ruta a la base de datos SQLite.

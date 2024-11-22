@@ -4,6 +4,7 @@ import face_recognition
 import sqlite3
 import pickle
 import time
+from picamera2 import Picamera2
 
 class FaceRecognitionClass:
     def __init__(self, db_path, encodings_path):
@@ -23,6 +24,12 @@ class FaceRecognitionClass:
             self.data = {"ids": [], "encodings": []}
             print("[INFO] No se encontraron encodings. El archivo se creará con el primer registro.")
 
+        # Inicializar Picamera2
+        self.picam2 = Picamera2()
+        self.picam2.configure(self.picam2.create_preview_configuration(main={"format": "RGB888", "size": (640, 480)}))
+        self.picam2.start()
+        print("[INFO] Picamera2 iniciada.")
+
     def reconocer_usuario(self, timeout=5):
         """
         Detecta rostros y compara con los encodings almacenados.
@@ -35,17 +42,11 @@ class FaceRecognitionClass:
 
         while time.time() - start_time < timeout:
             # Capturar un cuadro de la cámara
-            camera = cv2.VideoCapture(0)
-            ret, frame = camera.read()
-            if not ret:
-                print("[ERROR] No se pudo capturar la imagen.")
-                camera.release()
-                return None
-
+            frame = self.picam2.capture_array()
+            
             # Procesar el cuadro
             rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             face_locations = face_recognition.face_locations(rgb_frame)
-            camera.release()
 
             if len(face_locations) > 0:
                 # Si detectamos un rostro, procesamos el encoding
@@ -85,3 +86,10 @@ class FaceRecognitionClass:
         if user:
             return {"idusuario": user[0], "nombre": user[1], "apellidos": user[2], "default_azucar": user[3]}
         return None
+
+    def detener_camara(self):
+        """
+        Detiene la cámara Picamera2.
+        """
+        self.picam2.stop()
+        print("[INFO] Cámara detenida.")
