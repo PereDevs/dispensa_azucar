@@ -8,9 +8,11 @@ import pickle
 # Load pre-trained face encodings
 print("[INFO] Cargando codificaciones...")
 with open("/home/admin/dispensa_azucar/src/Face Recognition/dataset/encodings.pickle", "rb") as f:
-    data = pickle.loads(f.read())
-known_face_encodings = data["encodings"]
-known_face_names = data["names"]
+    data = pickle.load(f)
+
+# Extraer encodings y nombres del nuevo formato
+known_face_encodings = [entry["encoding"] for entry in data]
+known_face_names = [entry["name"] for entry in data]
 
 # Initialize the camera
 picam2 = Picamera2()

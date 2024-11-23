@@ -28,7 +28,7 @@ def get_processed_images(folder):
         return set()
     with open(processed_file, "r") as f:
         return set(f.read().strip().splitlines())
-
+    
 def save_processed_images(folder, processed_images):
     """Guarda todas las imágenes procesadas en el archivo."""
     processed_file = os.path.join(folder, "processed_images.txt")
@@ -36,7 +36,7 @@ def save_processed_images(folder, processed_images):
         for image in sorted(processed_images):
             f.write(f"{image}\n")
 
-def process_new_images(folder, id):
+def process_new_images(folder, id,name):
     """
     Procesa solo las imágenes nuevas y añade los encodings de las nuevas.
     """
@@ -54,7 +54,7 @@ def process_new_images(folder, id):
         image_path = os.path.join(folder, image_name)
         try:
             # Llama a tu función de procesamiento de encodings
-            procesar_persona(image_path, id)  # Ajusta según tu implementación
+            procesar_persona(name, id,image_path)  # Ajusta según tu implementación
             print(f"[INFO] Procesado: {image_name}")
             # Agrega la imagen procesada al conjunto
             processed_images.add(image_name)
@@ -74,7 +74,7 @@ def capture_photos(name, id, max_photos=5, delay_between_photos=2):
 
     # Inicializar la cámara
     picam2 = Picamera2()
-    picam2.configure(picam2.create_preview_configuration(main={"format": 'RGB888', "size": (640, 480)}))
+    picam2.configure(picam2.create_preview_configuration(main={"format": 'RGB888', "size": (1920, 1080)}))
     picam2.start()
     time.sleep(2)
 
@@ -126,6 +126,6 @@ if __name__ == "__main__":
     if nuevas_fotos > 0:
         print("[INFO] Añadiendo encodings de nuevas imágenes.")
         folder = create_folder(pid)
-        process_new_images(folder, pid)
+        process_new_images(folder, pid,pnameall)
     else:
         print("[INFO] No hay nuevas imágenes para añadir.")
