@@ -147,7 +147,9 @@ if __name__ == "__main__":
         print("[INFO] Añadiendo encodings de nuevas imágenes.")
         
         # Mostrar mensaje en LCD y mantener LED rojo encendido
-        lcd.write("Analizando...")
+        lcd.write(f"Analizando a")
+        lcd.write(f"{pnameall}", LCD_LINE_2)
+
         GPIO.output(LED_RED, GPIO.HIGH)
         GPIO.output(LED_GREEN, GPIO.LOW)
         GPIO.output(LED_WHITE, GPIO.LOW)
@@ -155,10 +157,16 @@ if __name__ == "__main__":
         procesar_persona(name=pnameall, user_id=pid)
         
         # Mostrar mensaje en LCD y encender LED verde
-        lcd.write("Usuario registrado")
+        lcd.write(f"{pnameall}")
+        lcd.write("registro OK",LCD_LINE_2)
+
         GPIO.output(LED_RED, GPIO.LOW)
         GPIO.output(LED_GREEN, GPIO.HIGH)
         GPIO.output(LED_WHITE, GPIO.LOW)
+        time.sleep(5)
+        GPIO.output(LED_GREEN, GPIO.LOW)
+        lcd.lcd_clear()
+
     else:
         print("[INFO] No hay nuevas imágenes para añadir.")
         # Apagar LEDs si no se realiza ninguna acción
