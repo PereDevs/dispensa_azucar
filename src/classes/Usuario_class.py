@@ -1,79 +1,101 @@
-import sqlite3
+import os
+import mysql.connector
+from datetime import datetime
+from PIL import Image
 import time
-from RPLCD.i2c import CharLCD
+from classes.Modelo_Entrenamiento_Class import ModeloEntrenamiento
+
 
 class UsuarioClass:
-    def __init__(self, db_path, lcd_address=0x27):
+    def __init__(self, nombre, id_usuario, tipo_azucar, db_config, dataset_path, encodings_path):
         """
-        Clase para manejar usuarios y mostrar información en el LCD.
-        :param db_path: Ruta a la base de datos SQLite.
-        :param lcd_address: Dirección I2C del LCD.
+        Constructor para la clase UsuarioClass.
         """
-        self.db_path = db_path
-        self.lcd = CharLCD('PCF8574', lcd_address)
+        self.nombre = nombre.lower()
+        self.id_usuario = id_usuario
+        self.db_config = db_config
+        self.dataset_path = dataset_path
+        self.encodings_path = encodings_path
+        self.user_folder = os.path.join(dataset_path, str(id_usuario))
 
-    def _get_user_data(self, user_name):
-        """
-        Obtiene datos del usuario desde la base de datos.
-        :param user_name: Nombre del usuario reconocido.
-        :return: Diccionario con datos del usuario o None si no existe.
-        """
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+    def existe_en_db(self):
+        """Comprueba si el usuario ya está registrado en la base de datos."""
+        try:
+            conn = mysql.connector.connect(**self.db_config)
+            cursor = conn.cursor()
+            query = "SELECT COUNT(*) FROM usuarios WHERE idusuario = %s"
+            cursor.execute(query, (self.id_usuario,))
+            result = cursor.fetchone()[0]
+            cursor.close()
+            conn.close()
+            return result > 0
+        except mysql.connector.Error as err:
+            print(f"[ERROR] Error al comprobar en la base de datos: {err}")
+            return False
 
-        cursor.execute("""
-            SELECT idusuario, nombre, default_azucar FROM usuarios
-            WHERE nombre = ?
-        """, (user_name,))
-        user = cursor.fetchone()
-        conn.close()
+    def registrar_en_db(self):
+        """Registra al usuario en la base de datos."""
+        try:
+            conn = mysql.connector.connect(**self.db_config)
+            cursor = conn.cursor()
+            query = "INSERT INTO usuarios (idusuario, nombre, NOW(),tipo_azucar) VALUES (%s, %s)"
+            cursor.execute(query, (self.id_usuario, self.nombre))
+            conn.commit()
+            cursor.close()
+            conn.close()
+            print(f"[INFO] Usuario {self.nombre} registrado en la base de datos.")
+        except mysql.connector.Error as err:
+            print(f"[ERROR] No se pudo registrar en la base de datos: {err}")
 
-        if user:
-            return {"idusuario": user[0], "nombre": user[1], "default_azucar": user[2]}
-        return None
+    def obtener_nuevo_id(db_config):
+        """Obtiene el siguiente ID disponible basado en la base de datos."""
+        try:
+            conn = mysql.connector.connect(**db_config)
+            cursor = conn.cursor()
+            query = "SELECT MAX(idusuario) FROM usuarios"
+            cursor.execute(query)
+            resultado = cursor.fetchone()[0]
+            cursor.close()
+            conn.close()
+            
+            if resultado is None:
+                return 1  # Si no hay usuarios, comienza con 1
+            return resultado + 1
+        except mysql.connector.Error as err:
+            print(f"[ERROR] Error al obtener el siguiente ID: {err}")
+            return None
 
-    def _get_consumed_sugar(self, user_id):
-        """
-        Calcula el azúcar consumido por el usuario.
-        :param user_id: ID del usuario.
-        :return: Cantidad total de azúcar consumida.
-        """
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
 
-        cursor.execute("""
-            SELECT SUM(cantidad_servicio) FROM actividad
-            WHERE idusuario = ?
-        """, (user_id,))
-        result = cursor.fetchone()
-        conn.close()
+    def capturar_imagenes(self, picam2, max_photos=5, delay_between_photos=2):
+        """Captura imágenes del usuario."""
+        if not os.path.exists(self.user_folder):
+            os.makedirs(self.user_folder)
+            print(f"[INFO] Carpeta creada para el usuario {self.nombre} en {self.user_folder}")
 
-        return result[0] if result[0] else 0
+        photo_count = 0
+        print(f"[INFO] Iniciando captura de imágenes para {self.nombre}.")
+        try:
+            picam2.start()
+            while photo_count < max_photos:
+                frame = picam2.capture_array()
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                filename = f"{self.id_usuario}_{self.nombre}_{timestamp}.jpg"
+                filepath = os.path.join(self.user_folder, filename)
+                with open(filepath, "wb") as f:
+                    Image.fromarray(frame).save(f, format="JPEG")
+                photo_count += 1
+                print(f"[INFO] Foto {photo_count} guardada en {filepath}")
+                time.sleep(delay_between_photos)
+        finally:
+            picam2.stop()
+            print(f"[INFO] Captura completada. Total de fotos guardadas: {photo_count}.")
 
-    def mostrar_usuario(self, user_name):
-        """
-        Muestra información del usuario en el LCD.
-        :param user_name: Nombre del usuario reconocido.
-        """
-        user_data = self._get_user_data(user_name)
-        if user_data:
-            consumido = self._get_consumed_sugar(user_data["idusuario"])
-            self.lcd.clear()
-            self.lcd.write_string(f"Hola, {user_data['nombre']}")
-            time.sleep(2)
-            self.lcd.clear()
-            self.lcd.write_string(f"Azucar: {user_data['default_azucar']}\nConsumido: {consumido}g")
-            time.sleep(2)
-        else:
-            self.lcd.clear()
-            self.lcd.write_string("USUARIO\nDESCONOCIDO")
-            time.sleep(2)
-            self.lcd.clear()
-            self.lcd.write_string("REGISTRATE")
-            time.sleep(2)
-
-    def mostrar_no_rostro(self):
-        """Muestra mensaje cuando no se detecta un rostro."""
-        self.lcd.clear()
-        self.lcd.write_string("NO SE DETECTO\nROSTRO")
-        time.sleep(2)
+    def entrenar_usuario(self):
+        """Entrena el modelo de reconocimiento facial para este usuario."""
+        try:
+            print(f"[INFO] Entrenando modelo para el usuario {self.nombre}.")
+            modelo = ModeloEntrenamiento(self.dataset_path, self.encodings_path)
+            modelo.entrenar_usuario(self.nombre, self.id_usuario)
+            print(f"[INFO] Entrenamiento completado para el usuario {self.nombre}.")
+        except Exception as e:
+            print(f"[ERROR] No se pudo entrenar el modelo para {self.nombre}: {e}")
