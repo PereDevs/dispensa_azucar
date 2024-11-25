@@ -4,7 +4,7 @@ from FaceRecognition_Class import *
 
 
 db_path = "usuarios.db"
-encodings_path = "/home/admin/dispensa_azucar/src/Face Recognition/dataset/encodings.pickle"
+encodings_path = "/home/admin/dispensa_azucar/dataset/encodings.pickle"
 
 registro = UsuarioRegistro(db_path, encodings_path)
 reconocimiento = FaceRecognitionClass(db_path, encodings_path)

@@ -2,6 +2,7 @@ import face_recognition
 import cv2
 import numpy as np
 from picamera2 import Picamera2
+import pickle
 
 class Reconocimiento:
     def __init__(self, encodings_path, db_config):
@@ -10,15 +11,18 @@ class Reconocimiento:
         self.known_face_encodings = []
         self.known_face_names = []
         self.cargar_encodings()
-
+    
     def cargar_encodings(self):
         """Carga los encodings desde el archivo."""
         try:
             with open(self.encodings_path, "rb") as f:
                 data = pickle.load(f)
-                self.known_face_encodings = data["encodings"]
-                self.known_face_names = data["names"]
-            print("[INFO] Encodings cargados correctamente.")
+                if isinstance(data, dict):  # Validar el formato
+                    self.known_face_encodings = data.get("encodings", [])
+                    self.known_face_names = data.get("names", [])
+                    print("[INFO] Encodings cargados correctamente.")
+                else:
+                    print("[ERROR] El archivo de encodings no tiene el formato esperado.")
         except Exception as e:
             print(f"[ERROR] No se pudieron cargar los encodings: {e}")
 

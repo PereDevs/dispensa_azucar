@@ -8,7 +8,7 @@ import time
 
 # Cargar codificaciones conocidas
 print("[INFO] Cargando codificaciones...")
-with open("/home/admin/dispensa_azucar/src/Face Recognition/dataset/encodings.pickle", "rb") as f:
+with open("/home/admin/dispensa_azucar/dataset/encodings.pickle", "rb") as f:
     data = pickle.load(f)
 
 known_face_encodings = [entry["encoding"] for entry in data]

@@ -4,7 +4,7 @@ import face_recognition
 import pickle
 import cv2
 
-def procesar_persona(name, user_id, path="/home/admin/dispensa_azucar/src/Face Recognition/dataset"):
+def procesar_persona(name, user_id, path="/home/admin/dispensa_azucar/dataset"):
     """
     Procesa las imágenes de una persona en un dataset, calcula los encodings y los guarda en un archivo pickle.
     """

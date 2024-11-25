@@ -1,10 +1,12 @@
 import os
 import sys
 from picamera2 import Picamera2
-from classes.Usuario_class import Usuario
-from classes.reconocimiento_class import Reconocimiento
+from classes.Usuario_class import UsuarioClass
+from classes.Reconocimiento_class import Reconocimiento
 from classes.Modelo_Entrenamiento_Class import ModeloEntrenamiento
 from classes.LCD_IC2_classe import LCD
+import pickle
+
 
 # Configuración
 DB_CONFIG = {
@@ -13,7 +15,7 @@ DB_CONFIG = {
     'host': 'localhost',
     'database': 'sugardb'
 }
-DATASET_PATH = "/home/admin/dispensa_azucar/src/Face Recognition/dataset"
+DATASET_PATH = "/home/admin/dispensa_azucar/dataset"
 ENCODINGS_PATH = os.path.join(DATASET_PATH, "encodings.pickle")
 
 # Inicialización de dispositivos

@@ -77,7 +77,7 @@ GPIO.output(LED_WHITE, GPIO.LOW)
 
 def create_folder(user_id):
     """Crea la carpeta para un usuario basado en su ID."""
-    dataset_folder = "/home/admin/dispensa_azucar/src/Face Recognition/dataset"
+    dataset_folder = "/home/admin/dispensa_azucar/dataset"
     if not os.path.exists(dataset_folder):
         os.makedirs(dataset_folder)
     person_folder = os.path.join(dataset_folder, str(user_id))
