@@ -55,7 +55,7 @@ class Reconocimiento:
             return name
         return "Desconocido"
 
-    def mostrar_informacion(self, lcd, nombre):
+    def mostrar_informacion(self, lcd, idusuario):
         """Muestra la información del usuario en el LCD."""
         try:
             conn = mysql.connector.connect(**self.db_config)
@@ -63,9 +63,9 @@ class Reconocimiento:
             query = """
             SELECT nombreclear 
             FROM usuarios 
-            WHERE nombre = %s
+            WHERE idusuario = %s
             """
-            cursor.execute(query, (nombre,))
+            cursor.execute(query, (idusuario,))
             user_info = cursor.fetchone()
             if user_info:
                 lcd.clear()

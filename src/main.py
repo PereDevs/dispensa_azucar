@@ -72,7 +72,7 @@ def proceso_principal():
                     nombre = input("Introduce el nombre del usuario: ").strip()
                     id_usuario = UsuarioClass.obtener_nuevo_id(DB_CONFIG)
                     tipoazucar = input("Tipo de azucar (1 -Blanco 2-Moreno 3-Edulcorante): ").strip()
-
+                    cantidadazucar = input("Cuántas cucharadas de azucar? ").strip()
                     # Crear instancia de Usuario
                     nuevo_usuario = UsuarioClass(nombre, id_usuario, tipoazucar, DB_CONFIG, DATASET_PATH, ENCODINGS_PATH)
 

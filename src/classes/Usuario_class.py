@@ -8,13 +8,14 @@ from datetime import datetime
 
 
 class UsuarioClass:
-    def __init__(self, nombre, id_usuario, tipo_azucar, db_config, dataset_path, encodings_path):
+    def __init__(self, nombre, id_usuario, tipo_azucar,cantidad_azucar, db_config, dataset_path, encodings_path):
         """
         Constructor para la clase UsuarioClass.
         """
         self.nombre = nombre.lower()
         self.id_usuario = id_usuario
         self.tipo_azucar = tipo_azucar
+        self.cantidad_azucar = cantidad_azucar
         self.db_config = db_config
         self.dataset_path = dataset_path
         self.encodings_path = encodings_path
@@ -35,7 +36,7 @@ class UsuarioClass:
             print(f"[ERROR] Error al comprobar en la base de datos: {err}")
             return False
     def registrar_en_db(self):
-        """Registra al usuario en la base de datos."""
+        """Registra al usuario en la base de datos y luego inicia el servicio de azúcar."""
         try:
             # Conexión a la base de datos
             conn = mysql.connector.connect(**self.db_config)
@@ -45,14 +46,19 @@ class UsuarioClass:
             fecha_actual = datetime.now().date()
 
             # Consulta SQL para insertar el usuario
-            query = "INSERT INTO usuarios (idusuario, nombre, fecha_registro, default_azucar) VALUES (%s, %s, %s, %s)"
-            cursor.execute(query, (self.id_usuario, self.nombre, fecha_actual, self.tipoazucar))
+            query = "INSERT INTO usuarios (idusuario, nombre, fecha_registro, default_azucar, cantidad) VALUES (%s, %s, %s, %s, %s)"
+            values = (self.id_usuario, self.nombre, fecha_actual, self.tipo_azucar, self.cantidad_azucar)
+            cursor.execute(query, values)
 
             # Confirmar la transacción
             conn.commit()
 
             print(f"[INFO] Usuario {self.nombre} registrado en la base de datos.")
-        
+
+            # <comentario>Código modificado por ChatGPT</comentario>
+            # Iniciar el servicio de azúcar tras registrar
+            self.iniciar_servicio_azucar()
+
         except mysql.connector.Error as err:
             print(f"[ERROR] No se pudo registrar en la base de datos: {err}")
         
@@ -92,10 +98,7 @@ class UsuarioClass:
         photo_count = 0
         print(f"[INFO] Iniciando captura de imágenes para {self.nombre}.")
         try:
-          
-            
-            
-            
+        
             picam2.start()
             while photo_count < max_photos:
                 frame = picam2.capture_array()
@@ -120,3 +123,12 @@ class UsuarioClass:
             print(f"[INFO] Entrenamiento completado para el usuario {self.nombre}.")
         except Exception as e:
             print(f"[ERROR] No se pudo entrenar el modelo para {self.nombre}: {e}")
+    
+    def iniciar_servicio_azucar(self):
+        """Inicia el servicio de azúcar usando los datos del usuario."""
+        try:
+            print(f"[INFO] Iniciando servicio de azúcar para {self.nombre}.")
+            # Simulación del servicio (puedes reemplazar esto con lógica específica)
+            print(f"[INFO] Dispensando {self.cantidad_azucar} de {self.tipo_azucar} para el usuario {self.nombre}.")
+        except Exception as e:
+            print(f"[ERROR] No se pudo iniciar el servicio de azúcar: {e}")
