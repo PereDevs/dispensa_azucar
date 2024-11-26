@@ -12,7 +12,7 @@ lcd.clear()
 
 # Cargar codificaciones de rostros preentrenadas
 print("[INFO] Cargando codificaciones...")
-with open("encodings.pickle", "rb") as f:
+with open("/home/admin/dispensa_azucar/dataset/encodings.pickle", "rb") as f:
     data = pickle.loads(f.read())
 known_face_encodings = data["encodings"]
 known_face_names = data["names"]

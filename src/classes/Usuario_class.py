@@ -1,10 +1,10 @@
 import os
 import mysql.connector
-from datetime import datetime
 from PIL import Image
 import time
 from classes.Modelo_Entrenamiento_Class import ModeloEntrenamiento
 from datetime import datetime
+
 
 
 class UsuarioClass:
@@ -119,16 +119,89 @@ class UsuarioClass:
         try:
             print(f"[INFO] Entrenando modelo para el usuario {self.nombre}.")
             modelo = ModeloEntrenamiento(self.dataset_path, self.encodings_path)
-            modelo.entrenar_usuario(self.nombre, self.id_usuario)
+            modelo.entrenar_usuario(self.id_usuario,self.nombre)
             print(f"[INFO] Entrenamiento completado para el usuario {self.nombre}.")
         except Exception as e:
             print(f"[ERROR] No se pudo entrenar el modelo para {self.nombre}: {e}")
     
+    
     def iniciar_servicio_azucar(self):
         """Inicia el servicio de azúcar usando los datos del usuario."""
+        
         try:
+            # Conectar a la base de datos para obtener el nombre del tipo de azúcar
+            conn = mysql.connector.connect(**self.db_config)
+            cursor = conn.cursor()
+
+            # Consulta para obtener el nombre del tipo de azúcar
+            query = "SELECT descripcion FROM tipo_azucar WHERE id_azucar = %s"
+            cursor.execute(query, (self.tipo_azucar,))
+            result = cursor.fetchone()
+
+            # Validar si se encontró el tipo de azúcar
+            if result:
+                nombre_tipo_azucar = result[0]
+            else:
+                nombre_tipo_azucar = "Desconocido"
+
+            # Log para iniciar servicio
             print(f"[INFO] Iniciando servicio de azúcar para {self.nombre}.")
-            # Simulación del servicio (puedes reemplazar esto con lógica específica)
-            print(f"[INFO] Dispensando {self.cantidad_azucar} de {self.tipo_azucar} para el usuario {self.nombre}.")
+            print(f"[INFO] Dispensando {self.cantidad_azucar} de {nombre_tipo_azucar} para el usuario {self.nombre}.")
+
+            # Aquí podría conectarse a la lógica del servomotor para dispensar el azúcar
+            print("[INFO] Dispensando azúcar... (simulación)")
+
+            self.registrar_actividad(self.id_usuario,self.db_config,self.cantidad_azucar)
+
+            # Aviso de finalización
+            print("[INFO] Proceso finalizado. El azúcar ha sido servido.")
+
+        except mysql.connector.Error as err:
+            print(f"[ERROR] No se pudo obtener el nombre del tipo de azúcar: {err}")
         except Exception as e:
             print(f"[ERROR] No se pudo iniciar el servicio de azúcar: {e}")
+        finally:
+            # Cerrar la conexión a la base de datos
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+        # Volver al método main() después de completar el servicio
+        #from main import main  # Importar al final para evitar ciclos de importación
+        main()
+
+    def registrar_actividad(self, id_usuario, db_config, cantidad_servicio=None):
+        """
+        Registra la actividad del usuario después de servir azúcar.
+        :param id_usuario: ID del usuario reconocido.
+        :param db_config: Configuración de la base de datos.
+        :param cantidad_servicio: Cantidad de azúcar servida (si es None, se obtiene de la base de datos).
+        """
+        try:
+            conn = mysql.connector.connect(**db_config)
+            cursor = conn.cursor()
+
+            # Si no se proporciona cantidad_servicio, obtenerla de la base de datos
+            if cantidad_servicio is None:
+                query_cantidad = "SELECT cantidad FROM usuarios WHERE idusuario = %s"
+                cursor.execute(query_cantidad, (id_usuario,))
+                result = cursor.fetchone()
+                cantidad_servicio = result[0] if result else 1.0  # Valor predeterminado si no se encuentra
+
+            # Consulta para insertar actividad
+            query = """
+            INSERT INTO actividad (idusuario, id_azucar, fecha_servicio, cantidad_servicio)
+            VALUES (%s, 
+                    (SELECT default_azucar FROM usuarios WHERE idusuario = %s), 
+                    NOW(), 
+                    %s)
+            """
+            cursor.execute(query, (id_usuario, id_usuario, cantidad_servicio))
+            conn.commit()
+            print(f"[INFO] Actividad registrada para el usuario con ID: {id_usuario} y cantidad: {cantidad_servicio}")
+
+            cursor.close()
+            conn.close()
+        except mysql.connector.Error as err:
+            print(f"[ERROR] No se pudo registrar la actividad: {err}")

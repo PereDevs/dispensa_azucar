@@ -89,3 +89,15 @@ class LCD_I2C:
                 self.bus.write_byte(self.address, LCD_BACKLIGHT_OFF)
         except Exception as e:
             print(f"[ERROR] No se pudo controlar la luz de fondo: {e}")
+    
+    def mostrar_cargando(self, mensaje="Cargando"):
+        """
+        Muestra un mensaje dinámico de 'Cargando' con un efecto de puntos en el LCD.
+        :param mensaje: Texto base a mostrar en el LCD.
+        """
+        puntos = [".", "..", "..."]
+        while True:
+            for p in puntos:
+                self.clear()
+                self.write(f"{mensaje}{p}", line=1)
+                time.sleep(0.5)  # Control de velocidad del efecto
