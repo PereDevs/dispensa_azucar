@@ -1,6 +1,11 @@
-from gpiozero import Button
 from classes.LCD_IC2_classe import LCD_I2C
+lcd = LCD_I2C()
+lcd.clear()
+lcd.write("Cargando", line=1)
+lcd.write("Espera...", line=2)
+
 import os
+from gpiozero import Button
 from picamera2 import Picamera2
 from classes.Usuario_class import UsuarioClass
 from classes.Reconocimiento_class import Reconocimiento
@@ -18,7 +23,6 @@ ENCODINGS_PATH = os.path.join(DATASET_PATH, "encodings.pickle")
 
 # Inicialización de dispositivos
 picam2 = Picamera2()
-lcd = LCD_I2C()
 button = Button(24)  # GPIO 17 configurado para el botón físico
 
 def proceso_principal():
@@ -74,11 +78,26 @@ def proceso_principal():
 
                     # Registrar en la base de datos si no existe
                     if not nuevo_usuario.existe_en_db():
-
-                        # Capturar imágenes y entrenar modelo
+                       
+                        # Temporizador de cuenta atrás antes de la captura
+                        countdown = 5  # Número de segundos para la cuenta atrás        
+                        print(f"Voy a capturar unas fotos tuyas en: {countdown} segundos.")
+                        for i in range(countdown, 0, -1):
+                            print(f"{i}...")  # Imprimir el tiempo restante
+                            time.sleep(1)  # Esperar 1 segundo entre cada número
+                                    # Capturar imágenes y entrenar modelo
+                        time.sleep(1)
+                        lcd.clear()
+                        lcd.write("Mira  a la cámara...", line=1)
+                        time.sleep(2)
                         lcd.clear()
                         lcd.write("Capturando...", line=1)
+            
                         nuevo_usuario.capturar_imagenes(picam2)
+
+                        lcd.clear()
+                        lcd.write("Captura finalizada!", line=1)
+                        time.sleep(2)
 
                         lcd.clear()
                         lcd.write("Entrenando...", line=1)

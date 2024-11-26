@@ -4,6 +4,7 @@ from datetime import datetime
 from PIL import Image
 import time
 from classes.Modelo_Entrenamiento_Class import ModeloEntrenamiento
+from datetime import datetime
 
 
 class UsuarioClass:
@@ -13,6 +14,7 @@ class UsuarioClass:
         """
         self.nombre = nombre.lower()
         self.id_usuario = id_usuario
+        self.tipo_azucar = tipo_azucar
         self.db_config = db_config
         self.dataset_path = dataset_path
         self.encodings_path = encodings_path
@@ -32,20 +34,35 @@ class UsuarioClass:
         except mysql.connector.Error as err:
             print(f"[ERROR] Error al comprobar en la base de datos: {err}")
             return False
-
     def registrar_en_db(self):
         """Registra al usuario en la base de datos."""
         try:
+            # Conexión a la base de datos
             conn = mysql.connector.connect(**self.db_config)
             cursor = conn.cursor()
-            query = "INSERT INTO usuarios (idusuario, nombre, NOW(),tipo_azucar) VALUES (%s, %s)"
-            cursor.execute(query, (self.id_usuario, self.nombre))
+
+            # Obtener la fecha actual
+            fecha_actual = datetime.now().date()
+
+            # Consulta SQL para insertar el usuario
+            query = "INSERT INTO usuarios (idusuario, nombre, fecha_registro, default_azucar) VALUES (%s, %s, %s, %s)"
+            cursor.execute(query, (self.id_usuario, self.nombre, fecha_actual, self.tipoazucar))
+
+            # Confirmar la transacción
             conn.commit()
-            cursor.close()
-            conn.close()
+
             print(f"[INFO] Usuario {self.nombre} registrado en la base de datos.")
+        
         except mysql.connector.Error as err:
             print(f"[ERROR] No se pudo registrar en la base de datos: {err}")
+        
+        finally:
+            # Asegurar el cierre de cursor y conexión
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
 
     def obtener_nuevo_id(db_config):
         """Obtiene el siguiente ID disponible basado en la base de datos."""
@@ -75,6 +92,10 @@ class UsuarioClass:
         photo_count = 0
         print(f"[INFO] Iniciando captura de imágenes para {self.nombre}.")
         try:
+          
+            
+            
+            
             picam2.start()
             while photo_count < max_photos:
                 frame = picam2.capture_array()
