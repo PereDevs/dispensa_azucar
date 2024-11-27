@@ -1,6 +1,9 @@
 import RPi.GPIO as GPIO
 import time
 from classes.LCD_IC2_classe import LCD_I2C
+import threading  # Para manejar la consulta manual en un hilo separado
+
+GPIO.setwarnings(False)
 
 class Contenedor:
     def __init__(self, capacidad_total, motor_pin, boton_pin, lcd):
@@ -9,7 +12,6 @@ class Contenedor:
         self.motor_pin = motor_pin  # Pin del servomotor
         self.boton_pin = boton_pin  # Pin del botón
         self.lcd = lcd  # Pantalla LCD para mensajes
-        self.boton_pulsado = 0  # Contador de pulsaciones del botón
         self.estado = "lleno"  # Estado inicial del contenedor
 
         # Configuración de los pines
@@ -17,13 +19,45 @@ class Contenedor:
         GPIO.setup(self.motor_pin, GPIO.OUT)
         GPIO.setup(self.boton_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Botón con pull-up interno
         
-
         # PWM para el servomotor
         self.servo = GPIO.PWM(self.motor_pin, 50)  # Frecuencia de 50Hz
         self.servo.start(0)  # Inicializar el servo en la posición 0°
 
-        # Evento para detectar pulsaciones del botón
-        GPIO.add_event_detect(self.boton_pin, GPIO.FALLING, callback=self.incrementar_contador_boton, bouncetime=300)
+        # Iniciar detección de presión prolongada en un hilo separado
+        self.hilo_deteccion = threading.Thread(target=self.detectar_presion_prolongada, daemon=True)
+        self.hilo_deteccion.start()
+
+    def detectar_presion_prolongada(self):
+        """
+        Detecta si el botón se mantiene presionado durante 5 segundos para confirmar el llenado del contenedor.
+        """
+        tiempo_inicio = None
+
+        while True:
+            if GPIO.input(self.boton_pin) == GPIO.LOW:  # Botón presionado
+                if tiempo_inicio is None:
+                    tiempo_inicio = time.time()  # Registrar el tiempo en que se presionó el botón
+
+                # Calcular la duración de la presión
+                duracion_presion = time.time() - tiempo_inicio
+                if duracion_presion >= 5:  # Si la presión dura 5 segundos o más
+                    print("[INFO] Botón mantenido durante 5 segundos. Confirmando llenado.")
+                    self.confirmar_llenado()
+                    tiempo_inicio = None  # Resetear el tiempo para futuras detecciones
+            else:
+                tiempo_inicio = None  # Resetear si se suelta el botón antes de los 5 segundos
+
+            time.sleep(0.1)  # Reducir la carga de la CPU
+
+    def confirmar_llenado(self):
+        """
+        Confirma que el contenedor ha sido llenado.
+        """
+        self.cantidad_actual = self.capacidad_total
+        self.estado = "lleno"
+        self.lcd.clear()
+        self.lcd.write("Contenedor lleno", line=1)
+        print("[INFO] Contenedor lleno confirmado.")
 
     def controlar_motor(self, angulo):
         """
@@ -67,16 +101,3 @@ class Contenedor:
         else:
             self.estado = "lleno"
             self.lcd.write("Contenedor listo", line=1)
-
-    def comprobar_relleno(self):
-        if self.boton_pulsado >= 2:
-            self.cantidad_actual = self.capacidad_total
-            self.boton_pulsado = 0
-            self.estado = "lleno"
-            self.lcd.write("Contenedor lleno", line=1)
-
-    def incrementar_contador_boton(self, channel):
-        self.boton_pulsado += 1
-        time.sleep(0.5)  # Tiempo para evitar falsos positivos
-        if self.boton_pulsado >= 2:
-            self.comprobar_relleno()

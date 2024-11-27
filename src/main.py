@@ -1,6 +1,6 @@
 from classes.LCD_IC2_classe import LCD_I2C
 lcd = LCD_I2C()
-lcd.clear()
+lcd.clear() 
 lcd.write("Cargando", line=1)
 lcd.write("Espera...", line=2)
 
@@ -13,6 +13,8 @@ from classes.taza_class import Taza
 from classes.Contenedor_Class import Contenedor
 
 import time
+
+
 
 # Configuración
 DB_CONFIG = {
@@ -144,8 +146,8 @@ def proceso_principal():
             lcd.write(f"{usuario.nombre}", line=2)
             time.sleep(2)
 
-            lcd.clear()
-            lcd.write("Sirviendo", line=1)
+            #lcd.clear()
+            #lcd.write("Sirviendo", line=1)
             tipo_azucar = usuario.tipo_azucar  # Obtener tipo de azúcar del usuario
             cantidad_azucar = usuario.cantidad_azucar  # Cantidad en gramos
             resultado = contenedor.dispensar_azucar(cantidad_azucar)
@@ -165,8 +167,8 @@ def proceso_principal():
             if id_usuario != "Desconocido":
                 # Simular servir azúcar
                 lcd.clear()
-                lcd.write("Sirviendo", line=1)
-                lcd.write("azucar...", line=2)
+                #lcd.write("Sirviendo", line=1)
+                #lcd.write("azucar...", line=2)
                 time.sleep(3)
 
                 # Registrar actividad en la base de datos

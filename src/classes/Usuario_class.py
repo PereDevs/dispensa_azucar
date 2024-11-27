@@ -36,13 +36,26 @@ class UsuarioClass:
             conn.close()
 
             if user_data:
+                
+                # Manejar valores por defecto para tipo_azucar y cantidad_azucar
+                tipo_azucar = user_data.get('default_azucar', 'blanco')  # Por defecto 'blanco'
+                cantidad_azucar = user_data.get('cantidad', 1)  # Por defecto 1 cucharada
+
+                # Asegurarse de que los valores no sean None
+                if tipo_azucar is None:
+                    tipo_azucar = 'blanco'
+                if cantidad_azucar is None:
+                    cantidad_azucar = 1
+                    
                 return cls(
                     nombre=user_data['nombre'],
                     id_usuario=user_data['idusuario'],
+                    tipo_azucar=tipo_azucar,
+                    cantidad_azucar=cantidad_azucar,
                     db_config=db_config,
                     dataset_path=dataset_path,
                     encodings_path=encodings_path
-                )
+                    )
             else:
                 raise ValueError(f"Usuario con ID {id_usuario} no encontrado.")
         except mysql.connector.Error as err:
