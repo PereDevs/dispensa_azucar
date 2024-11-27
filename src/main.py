@@ -119,9 +119,15 @@ def proceso_principal():
                 time.sleep(3)
 
                 # Registrar actividad en la base de datos
-                usuario = UsuarioClass()
+ # Crear instancia de UsuarioClass solo con el ID
+                usuarioconocido = UsuarioClass.from_db_by_id(
+                id_usuario=id_usuario,
+                db_config=DB_CONFIG,
+                dataset_path = DATASET_PATH,
+                encodings_path=ENCODINGS_PATH
+                )
                 cantidad_servicio = None  # Se obtiene automáticamente para usuarios reconocidos
-                usuario.registrar_actividad(id_usuario, DB_CONFIG, cantidad_servicio)
+                usuarioconocido.registrar_actividad(id_usuario, DB_CONFIG, cantidad_servicio)
 
                 # Mostrar información del usuario
                 reconocimiento.mostrar_informacion(lcd, id_usuario)

@@ -8,7 +8,7 @@ from datetime import datetime
 
 
 class UsuarioClass:
-    def __init__(self, nombre, id_usuario, tipo_azucar,cantidad_azucar, db_config, dataset_path, encodings_path):
+    def __init__(self, nombre, id_usuario, db_config, dataset_path, encodings_path,tipo_azucar = None,cantidad_azucar=None):
         """
         Constructor para la clase UsuarioClass.
         """
@@ -20,6 +20,34 @@ class UsuarioClass:
         self.dataset_path = dataset_path
         self.encodings_path = encodings_path
         self.user_folder = os.path.join(dataset_path, str(id_usuario))
+
+    @classmethod
+    def from_db_by_id(cls, id_usuario, db_config, dataset_path, encodings_path):
+        """
+        Carga un usuario desde la base de datos usando su ID.
+        """
+        try:
+            conn = mysql.connector.connect(**db_config)
+            cursor = conn.cursor(dictionary=True)
+            query = "SELECT * FROM usuarios WHERE idusuario = %s"
+            cursor.execute(query, (id_usuario,))
+            user_data = cursor.fetchone()
+            cursor.close()
+            conn.close()
+
+            if user_data:
+                return cls(
+                    nombre=user_data['nombre'],
+                    id_usuario=user_data['idusuario'],
+                    db_config=db_config,
+                    dataset_path=dataset_path,
+                    encodings_path=encodings_path
+                )
+            else:
+                raise ValueError(f"Usuario con ID {id_usuario} no encontrado.")
+        except mysql.connector.Error as err:
+            print(f"[ERROR] No se pudo conectar a la base de datos: {err}")
+            raise
 
     def existe_en_db(self):
         """Comprueba si el usuario ya está registrado en la base de datos."""
@@ -35,6 +63,8 @@ class UsuarioClass:
         except mysql.connector.Error as err:
             print(f"[ERROR] Error al comprobar en la base de datos: {err}")
             return False
+
+
     def registrar_en_db(self):
         """Registra al usuario en la base de datos y luego inicia el servicio de azúcar."""
         try:
