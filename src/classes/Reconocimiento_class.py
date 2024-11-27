@@ -107,8 +107,8 @@ class Reconocimiento:
                 lcd.clear()
                 tipo_azucar = user_info.get('tipo_azucar', 'N/A')
                 cantidad_consumida = user_info.get('cantidad_consumida', 0)
-                lcd.write(f"Consumo de  30 dias de {user_info['nombre']}", line=1)  # Cambiado de 'nombreclear' a 'nombre'
-                lcd.write(f"Azucar: {tipo_azucar}: {cantidad_consumida}", line=2)
+                lcd.write(f"30 dias de {user_info['nombre']}", line=1)  # Cambiado de 'nombreclear' a 'nombre'
+                lcd.write(f"Total azucar: {tipo_azucar}: {cantidad_consumida}", line=2)
                 time.sleep(2)
                 
             else:

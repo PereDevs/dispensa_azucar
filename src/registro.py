@@ -16,6 +16,6 @@ registro.registrar_usuario("Juan", "Pérez", 1)
 user_id = reconocimiento.reconocer_usuario()
 if user_id:
     user_data = reconocimiento.get_user_data(user_id)
-    print(f"Usuario reconocido: {user_data['nombre']} {user_data['apellidos']} (Azúcar: {user_data['default_azucar']})")
+    print(f"Usuario reconocido: {user_data['nombre']} {user_data['apellidos']} (Azucar: {user_data['default_azucar']})")
 else:
     print("Usuario no reconocido.")

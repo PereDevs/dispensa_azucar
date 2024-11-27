@@ -115,7 +115,7 @@ def proceso_principal():
                 # Simular servir azúcar
                 lcd.clear()
                 lcd.write("Sirviendo", line=1)
-                lcd.write("azúcar...", line=2)
+                lcd.write("azucar...", line=2)
                 time.sleep(3)
 
                 # Registrar actividad en la base de datos
@@ -161,8 +161,8 @@ def proceso_principal():
 def main():
     """Bucle principal de espera por botón."""
     lcd.clear()
-    lcd.write("Pulsa botón", line=1)
-    lcd.write("para azúcar", line=2)
+    lcd.write("Pulsa boton", line=1)
+    lcd.write("para azucar", line=2)
 
     while True:
         # Espera por pulsación del botón
