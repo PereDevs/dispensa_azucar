@@ -185,6 +185,7 @@ class UsuarioClass:
 
             # Aviso de finalización
             print("[INFO] Proceso finalizado. El azúcar ha sido servido.")
+            time.sleep(5)
 
         except mysql.connector.Error as err:
             print(f"[ERROR] No se pudo obtener el nombre del tipo de azúcar: {err}")
@@ -198,8 +199,8 @@ class UsuarioClass:
                 conn.close()
 
         # Volver al método main() después de completar el servicio
-        #from main import main  # Importar al final para evitar ciclos de importación
-        main()
+        from main import main  # Importar al final para evitar ciclos de importación
+        main.main()
 
     def registrar_actividad(self, id_usuario, db_config, cantidad_servicio=None):
         """

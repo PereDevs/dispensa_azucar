@@ -1,5 +1,7 @@
 import face_recognition
 import cv2
+from classes.LCD_IC2_classe import LCD_I2C
+
 import numpy as np
 import pickle
 import os
@@ -61,12 +63,15 @@ class Reconocimiento:
                     if matches[best_match_index]:
                         name = self.known_names[best_match_index]  # Obtener el nombre del usuario reconocido
                         id_usuario = self.known_ids[best_match_index]  # Obtener el ID correspondiente
+                        lcd = LCD_I2C()
+                        lcd.clear()
                         print(f"[INFO] Usuario reconocido: {name} (ID: {id_usuario})")
                         return id_usuario
 
             # Si no hay coincidencias, retornar "Desconocido"
             print("[INFO] Usuario desconocido.")
             return "Desconocido"
+
 
         except Exception as e:
             print(f"[ERROR] Problema durante el reconocimiento facial: {e}")
@@ -100,16 +105,22 @@ class Reconocimiento:
             user_info = cursor.fetchone()
             
             # Validar si se encontró información del usuario
+            lcd = LCD_I2C()
+            
             if user_info:
                 lcd.clear()
-                lcd.write(f"Bienvenido, {user_info['nombre']}", line=1)  # Cambiado de 'nombreclear' a 'nombre'
+                #lcd.write(f"Bienvenido, {user_info['nombre']}", line=1)  # Cambiado de 'nombreclear' a 'nombre'
                 time.sleep(2)
-                lcd.clear()
                 tipo_azucar = user_info.get('tipo_azucar', 'N/A')
                 cantidad_consumida = user_info.get('cantidad_consumida', 0)
-                lcd.write(f"30 dias de {user_info['nombre']}", line=1)  # Cambiado de 'nombreclear' a 'nombre'
-                lcd.write(f"Total azucar: {tipo_azucar}: {cantidad_consumida}", line=2)
-                time.sleep(2)
+                lcd.clear()
+                lcd.write(f" {user_info['nombre']}, te muestro", line=1)  # Cambiado de 'nombreclear' a 'nombre'
+                lcd.write("consumo 30 dias", line=2)  # Cambiado de 'nombreclear' a 'nombre'
+                time.sleep(5)
+                lcd.clear()
+                lcd.write(f"Tipo: {tipo_azucar}", line=1)  # Cambiado de 'nombreclear' a 'nombre'
+                lcd.write(f"Consumo: {cantidad_consumida}", line=2)
+                time.sleep(5)
                 
             else:
                 lcd.clear()

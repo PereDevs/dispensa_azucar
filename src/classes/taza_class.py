@@ -1,4 +1,5 @@
-from Sensor_infrarrojos_classe import SensorInfrarrojo
+import time
+from classes.Sensor_infrarrojos_classe import SensorInfrarrojo
 
 class Taza:
     def __init__(self, pin_sensor):
@@ -32,13 +33,3 @@ class Taza:
         """
         self.sensor.limpiar()
 
-# Ejemplo de uso con la clase Taza:
-if __name__ == "__main__":
-    taza = Taza(pin_sensor=17)  # Cambia al pin GPIO conectado al sensor infrarrojo
-    try:
-        taza.esperar_por_taza()
-        print("[INFO] Proceso completado.")
-    except KeyboardInterrupt:
-        print("[INFO] Finalizando...")
-    finally:
-        taza.limpiar()

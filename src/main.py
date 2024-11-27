@@ -9,6 +9,9 @@ from gpiozero import Button
 from picamera2 import Picamera2
 from classes.Usuario_class import UsuarioClass
 from classes.Reconocimiento_class import Reconocimiento
+from classes.taza_class import Taza
+from classes.Contenedor_Class import Contenedor
+
 import time
 
 # Configuración
@@ -20,11 +23,25 @@ DB_CONFIG = {
 }
 DATASET_PATH = "/home/admin/dispensa_azucar/dataset"
 ENCODINGS_PATH = os.path.join(DATASET_PATH, "encodings.pickle")
+PIN_SENSOR_TAZA = 21
+PIN_MOTOR_CONTENEDOR1 = 18 
+PIN_BOTON_CONTENEDOR = 24  
+
 
 # Inicialización de dispositivos
 try:
     picam2 = Picamera2()
     button = Button(24)  # GPIO 24 configurado para el botón físico
+    taza = Taza(1)  # Modificado taza: Inicializar la clase Taza
+    taza = Taza(pin_sensor=PIN_SENSOR_TAZA)
+    contenedor = Contenedor(
+    capacidad_total=1000,  # Capacidad en gramos
+    motor_pin=PIN_MOTOR_CONTENEDOR1,
+    boton_pin=PIN_BOTON_CONTENEDOR,
+    lcd=lcd
+)
+    
+    
     camera_active = False
 except Exception as e:
     print(f"[ERROR] Problema con la inicialización de la cámara o el botón: {e}")
@@ -45,6 +62,19 @@ def proceso_principal():
     global camera_active
 
     try:
+        # Verificar si la taza está presente antes de iniciar el proceso principal
+        lcd.clear()  # Modificado taza
+        lcd.write("Verificando", line=1)  # Modificado taza
+        lcd.write("taza...", line=2)  # Modificado taza
+        while not taza.taza_presente():  # Modificado taza: Esperar que la taza esté presente
+            lcd.clear()
+            lcd.write("Pon la taza", line=1)  # Modificado taza
+            time.sleep(1)  # Modificado taza
+
+        lcd.clear()  # Modificado taza
+        lcd.write("Taza lista", line=1)  # Modificado taza
+        time.sleep(2)  # Modificado taza
+
         # Configurar y activar la cámara
         picam2.configure(picam2.create_preview_configuration(main={"format": "RGB888", "size": (640, 480)}))
         picam2.start()
@@ -74,12 +104,12 @@ def proceso_principal():
                 nombre = input("Introduce el nombre del usuario: ").strip()
                 id_usuario = UsuarioClass.obtener_nuevo_id(DB_CONFIG)
                 tipoazucar = input("Tipo de azucar (1 -Blanco 2-Moreno 3-Edulcorante): ").strip()
-                cantidadazucar = input("Cuántas cucharadas de azucar (4g por cucharada)? ").strip()
+                cantidadazucar = input("Cuántas cucharadas de azucar? ").strip()
                 cantidadazucar_int = 4 * int(cantidadazucar)
 
                 # Crear instancia y registrar nuevo usuario
-                nuevo_usuario = UsuarioClass(nombre, id_usuario, tipoazucar, cantidadazucar_int, DB_CONFIG, DATASET_PATH, ENCODINGS_PATH)
-
+                nuevo_usuario = UsuarioClass(nombre, id_usuario, DB_CONFIG, DATASET_PATH, ENCODINGS_PATH, tipoazucar, cantidadazucar_int)
+                 #_init__(self, nombre, id_usuario, db_config, dataset_path, encodings_path,tipo_azucar = None,cantidad_azucar=None):
                 if not nuevo_usuario.existe_en_db():
                      # Mostrar countdown antes de capturar imágenes
                     for i in range(5, 0, -1):  # Countdown de 3 a 1
@@ -105,8 +135,29 @@ def proceso_principal():
         else:
             lcd.clear()
             lcd.write("Bienvenido", line=1)
-            lcd.write(f"ID {id_usuario}", line=2)
+            usuario = UsuarioClass.from_db_by_id(
+                    id_usuario=id_usuario,
+                    db_config=DB_CONFIG,
+                    dataset_path=DATASET_PATH,
+                    encodings_path=ENCODINGS_PATH
+                    )
+            lcd.write(f"{usuario.nombre}", line=2)
             time.sleep(2)
+
+            lcd.clear()
+            lcd.write("Sirviendo", line=1)
+            tipo_azucar = usuario.tipo_azucar  # Obtener tipo de azúcar del usuario
+            cantidad_azucar = usuario.cantidad_azucar  # Cantidad en gramos
+            resultado = contenedor.dispensar_azucar(cantidad_azucar)
+            if "Error" in resultado:
+                lcd.clear()
+                lcd.write("Azúcar vacío", line=1)
+                lcd.write("Rellena", line=2)
+                time.sleep(5)
+            else:
+                lcd.write("Listo!", line=2)
+                time.sleep(3)
+                      
 
             # Mostrar información básica del usuario
 
@@ -157,7 +208,7 @@ def proceso_principal():
         print("[INFO] Retornando al estado de espera del botón.")  # Log de depuración
         main()
 
-0
+
 def main():
     """Bucle principal de espera por botón."""
     lcd.clear()
