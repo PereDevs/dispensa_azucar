@@ -1,19 +1,12 @@
-import RPi.GPIO as GPIO
-import time
+from gpiozero import Button
 
-boton_pin = 24  # Cambia esto si usas otro pin
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(boton_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+# Configura el botón en GPIO 18 con pull-down
+button = Button(18, pull_up=True)
 
-def boton_callback(channel):
-    print("Botón pulsado")
+print("Estado inicial:", "Presionado" if button.is_pressed else "No presionado")
 
-try:
-    GPIO.add_event_detect(boton_pin, GPIO.FALLING, callback=boton_callback, bouncetime=300)
-    print("Esperando eventos. Presiona Ctrl+C para salir.")
-    while True:
-        time.sleep(1)  # Mantén el programa corriendo
-except KeyboardInterrupt:
-    print("Interrumpido por el usuario")
-finally:
-    GPIO.cleanup()
+while True:
+    if button.is_pressed:
+        print("¡Botón presionado!")
+    else:
+        print("Botón no presionado")

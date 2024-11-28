@@ -1,101 +1,156 @@
 import RPi.GPIO as GPIO
 import time
+import mysql.connector
+from mysql.connector import Error
 from classes.LCD_IC2_classe import LCD_I2C
-import threading  # Para manejar la consulta manual en un hilo separado
 
 GPIO.setwarnings(False)
 
-
-
 class Contenedor:
-    def __init__(self, capacidad_total, motor_pin, boton_pin, lcd):
-        self.capacidad_total = capacidad_total  # Capacidad total del contenedor
-        self.cantidad_actual = capacidad_total  # Inicialmente está lleno
-        self.motor_pin = motor_pin  # Pin del servomotor
-        self.boton_pin = boton_pin  # Pin del botón
-        self.lcd = lcd  # Pantalla LCD para mensajes
-        self.estado = "lleno"  # Estado inicial del contenedor
+    def __init__(self, capacidad_total, motor_pin, boton_pin, lcd, tipo_azucar, db_config):
+        self.capacidad_total = capacidad_total
+        self.motor_pin = motor_pin
+        self.boton_pin = boton_pin
+        self.lcd = lcd
+        self.tipo_azucar = tipo_azucar  # Tipo de azúcar (1: Blanco, 2: Moreno, 3: Edulcorante)
+        self.db_config = db_config  # Configuración de la base de datos
+        self.cantidad_actual = self.obtener_cantidad_actual()  # Cantidad disponible desde la base de datos
+        self.estado = "lleno" if self.cantidad_actual > 0 else "vacio"
 
-        # Configuración de los pines
+        # Configuración del hardware
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(self.motor_pin, GPIO.OUT)
-        GPIO.setup(self.boton_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Botón con pull-up interno
-        
-        # PWM para el servomotor
-        self.servo = GPIO.PWM(self.motor_pin, 50)  # Frecuencia de 50Hz
-        self.servo.start(0)  # Inicializar el servo en la posición 0°
+        GPIO.setup(self.boton_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        self.servo = GPIO.PWM(self.motor_pin, 50)
+        self.servo.start(0)
 
-        # Iniciar detección de presión prolongada en un hilo separado
-        self.hilo_deteccion = threading.Thread(target=self.detectar_presion_prolongada, daemon=True)
-        self.hilo_deteccion.start()
-
-    def detectar_presion_prolongada(self):
+    def obtener_cantidad_actual(self):
         """
-        Detecta si el botón se mantiene presionado durante 5 segundos para confirmar el llenado del contenedor.
+        Consulta la cantidad disponible y el estado del contenedor desde la base de datos.
         """
-        tiempo_inicio = None
+        try:
+            conexion = mysql.connector.connect(**self.db_config)
+            cursor = conexion.cursor()
+            query = """
+                SELECT cantidad_disponible, estado, capacidad_total
+                FROM contenedores
+                WHERE id_azucar = %s
+            """
+            cursor.execute(query, (self.tipo_azucar,))
+            resultado = cursor.fetchone()
+            conexion.close()
 
-        while True:
-            if GPIO.input(self.boton_pin) == GPIO.LOW:  # Botón presionado
-                if tiempo_inicio is None:
-                    tiempo_inicio = time.time()  # Registrar el tiempo en que se presionó el botón
-
-                # Calcular la duración de la presión
-                duracion_presion = time.time() - tiempo_inicio
-                if duracion_presion >= 5:  # Si la presión dura 5 segundos o más
-                    print("[INFO] Botón mantenido durante 5 segundos. Confirmando llenado.")
-                    self.confirmar_llenado()
-                    tiempo_inicio = None  # Resetear el tiempo para futuras detecciones
+            if resultado:
+                cantidad_disponible, estado, capacidad_total = resultado
+                self.estado = estado
+                self.capacidad_total = capacidad_total
+                return cantidad_disponible
             else:
-                tiempo_inicio = None  # Resetear si se suelta el botón antes de los 5 segundos
-
-            time.sleep(0.1)  # Reducir la carga de la CPU
-
-    def confirmar_llenado(self):
-        self.cantidad_actual = self.capacidad_total
-        self.estado = "lleno"
-        self.lcd.clear()
-        self.lcd.write("Contenedor lleno", line=1)
-        print("[INFO] Contenedor lleno confirmado.")
-
-    def controlar_motor(self, angulo):
-        """
-        Controla el servomotor moviéndolo al ángulo especificado.
-        :param angulo: Ángulo al que mover el servomotor (0° a 180°).
-        """
-        duty_cycle = 2 + (angulo / 18)  # Conversión de ángulo a ciclo de trabajo
-        self.servo.ChangeDutyCycle(duty_cycle)
-        time.sleep(0.5)  # Esperar a que el servo complete el movimiento
-        self.servo.ChangeDutyCycle(0)  # Apagar el servo para evitar sobrecalentamiento
+                print("[ERROR] Contenedor no encontrado en la base de datos.")
+                return 0
+        except Error as e:
+            print(f"[ERROR] Al consultar la base de datos: {e}")
+            return 0
 
     def dispensar_azucar(self, cantidad):
-        if self.cantidad_actual <= 0:
+        """
+        Dispensar una cantidad específica de azúcar.
+        """
+        self.cantidad_actual = self.obtener_cantidad_actual()  # Actualizar la cantidad actual
+
+        if self.cantidad_actual <= 0 or self.estado == "vacio":
             self.estado = "vacio"
+            self.lcd.clear()
             self.lcd.write("Azúcar vacío", line=1)
+            self.lcd.write("Pulsar boton", line=2)
             return "Error: Contenedor vacío"
 
         if cantidad > self.cantidad_actual:
-            cantidad = self.cantidad_actual  # No se puede dispensar más de lo que queda
+            self.lcd.clear()
+            self.lcd.write("No hay suficiente", line=1)
+            self.lcd.write(f"Azúcar. Disp: {self.cantidad_actual}g", line=2)
+            time.sleep(3)
+            return "Error: No hay suficiente azúcar disponible"
 
         # Abrir el dispensador
         self.controlar_motor(90)
+        self.lcd.clear()
         self.lcd.write(f"Sirviendo {cantidad}g", line=1)
         time.sleep(cantidad * 0.5)  # Simular tiempo de dispensado
+        self.controlar_motor(0)  # Cerrar el dispensador
 
-        # Cerrar el dispensador
-        self.controlar_motor(0)
-
-        self.cantidad_actual -= cantidad  # Restar la cantidad dispensada
-
-        if self.cantidad_actual <= 0:
-            self.actualizar_estado()  # Solo mostrar mensaje si el contenedor está vacío
-
+        # Registrar el consumo
+        self.registrar_dispenso(cantidad)
+        self.cantidad_actual -= cantidad  # Actualizar localmente
+        self.actualizar_estado()
         return f"Dispensado: {cantidad} g"
 
+    def registrar_dispenso(self, cantidad):
+        """
+        Actualiza la base de datos al dispensar azúcar.
+        """
+        try:
+            conexion = mysql.connector.connect(**self.db_config)
+            cursor = conexion.cursor()
+            query = """
+                UPDATE contenedores
+                SET cantidad_disponible = cantidad_disponible - %s,
+                    estado = CASE
+                        WHEN cantidad_disponible - %s <= 0 THEN 'vacio'
+                        WHEN cantidad_disponible - %s < capacidad_total THEN 'parcial'
+                        ELSE 'lleno'
+                    END
+                WHERE id_azucar = %s
+            """
+            cursor.execute(query, (cantidad, cantidad, cantidad, self.tipo_azucar))
+            conexion.commit()
+            conexion.close()
+        except Error as e:
+            print(f"[ERROR] Al actualizar el estado del contenedor: {e}")
+
+    def rellenar_contenedor(self):
+        """
+        Actualiza la cantidad disponible al rellenar el contenedor.
+        """
+        try:
+            conexion = mysql.connector.connect(**self.db_config)
+            cursor = conexion.cursor()
+            query = """
+                UPDATE contenedores
+                SET cantidad_disponible = capacidad_total,
+                    estado = 'lleno'
+                WHERE id_azucar = %s
+            """
+            cursor.execute(query, (self.tipo_azucar,))
+            conexion.commit()
+            conexion.close()
+
+            self.cantidad_actual = self.capacidad_total
+            self.estado = "lleno"
+
+            self.lcd.clear()
+            self.lcd.write("Contenedor lleno", line=1)
+            time.sleep(3)
+        except Error as e:
+            print(f"[ERROR] Al rellenar el contenedor: {e}")
 
     def actualizar_estado(self):
+        """
+        Actualiza el estado del contenedor basado en la cantidad actual.
+        """
         if self.cantidad_actual <= 0:
             self.estado = "vacio"
             self.lcd.write("Azúcar vacío", line=1)
-        elif self.cantidad_actual > 0 and self.estado != "lleno":
-            self.estado = "parcial"  # No es lleno, pero tampoco vacío
+        elif self.cantidad_actual < self.capacidad_total:
+            self.estado = "parcial"
+        else:
+            self.estado = "lleno"
+
+    def controlar_motor(self, angulo):
+        """
+        Controla el motor moviéndolo al ángulo deseado.
+        """
+        duty_cycle = 2 + (angulo / 18)  # Convertir ángulo a ciclo de trabajo
+        self.servo.ChangeDutyCycle(duty_cycle)
+        time.sleep(1)
+        self.servo.ChangeDutyCycle(0)

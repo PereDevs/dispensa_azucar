@@ -79,7 +79,7 @@ class UsuarioClass:
 
 
     def registrar_en_db(self):
-        """Registra al usuario en la base de datos y luego inicia el servicio de azúcar."""
+        """Registra al usuario en la base de datos y luego inicia el servicio de azucar."""
         try:
             # Conexión a la base de datos
             conn = mysql.connector.connect(**self.db_config)
@@ -99,7 +99,7 @@ class UsuarioClass:
             print(f"[INFO] Usuario {self.nombre} registrado en la base de datos.")
 
             # <comentario>Código modificado por ChatGPT</comentario>
-            # Iniciar el servicio de azúcar tras registrar
+            # Iniciar el servicio de azucar tras registrar
             self.iniciar_servicio_azucar()
 
         except mysql.connector.Error as err:
@@ -169,41 +169,41 @@ class UsuarioClass:
     
     
     def iniciar_servicio_azucar(self):
-        """Inicia el servicio de azúcar usando los datos del usuario."""
+        """Inicia el servicio de azucar usando los datos del usuario."""
         
         try:
-            # Conectar a la base de datos para obtener el nombre del tipo de azúcar
+            # Conectar a la base de datos para obtener el nombre del tipo de azucar
             conn = mysql.connector.connect(**self.db_config)
             cursor = conn.cursor()
 
-            # Consulta para obtener el nombre del tipo de azúcar
+            # Consulta para obtener el nombre del tipo de azucar
             query = "SELECT descripcion FROM tipo_azucar WHERE id_azucar = %s"
             cursor.execute(query, (self.tipo_azucar,))
             result = cursor.fetchone()
 
-            # Validar si se encontró el tipo de azúcar
+            # Validar si se encontró el tipo de azucar
             if result:
                 nombre_tipo_azucar = result[0]
             else:
                 nombre_tipo_azucar = "Desconocido"
 
             # Log para iniciar servicio
-            print(f"[INFO] Iniciando servicio de azúcar para {self.nombre}.")
+            print(f"[INFO] Iniciando servicio de azucar para {self.nombre}.")
             print(f"[INFO] Dispensando {self.cantidad_azucar} de {nombre_tipo_azucar} para el usuario {self.nombre}.")
 
-            # Aquí podría conectarse a la lógica del servomotor para dispensar el azúcar
-            print("[INFO] Dispensando azúcar... (simulación)")
+            # Aquí podría conectarse a la lógica del servomotor para dispensar el azucar
+            print("[INFO] Dispensando azucar... (simulación)")
 
             self.registrar_actividad(self.id_usuario,self.db_config,self.cantidad_azucar)
 
             # Aviso de finalización
-            print("[INFO] Proceso finalizado. El azúcar ha sido servido.")
+            print("[INFO] Proceso finalizado. El azucar ha sido servido.")
             time.sleep(5)
 
         except mysql.connector.Error as err:
-            print(f"[ERROR] No se pudo obtener el nombre del tipo de azúcar: {err}")
+            print(f"[ERROR] No se pudo obtener el nombre del tipo de azucar: {err}")
         except Exception as e:
-            print(f"[ERROR] No se pudo iniciar el servicio de azúcar: {e}")
+            print(f"[ERROR] No se pudo iniciar el servicio de azucar: {e}")
         finally:
             # Cerrar la conexión a la base de datos
             if cursor:
@@ -217,10 +217,10 @@ class UsuarioClass:
 
     def registrar_actividad(self, id_usuario, db_config, cantidad_servicio=None):
         """
-        Registra la actividad del usuario después de servir azúcar.
+        Registra la actividad del usuario después de servir azucar.
         :param id_usuario: ID del usuario reconocido.
         :param db_config: Configuración de la base de datos.
-        :param cantidad_servicio: Cantidad de azúcar servida (si es None, se obtiene de la base de datos).
+        :param cantidad_servicio: Cantidad de azucar servida (si es None, se obtiene de la base de datos).
         """
         try:
             conn = mysql.connector.connect(**db_config)
