@@ -5,6 +5,8 @@ import threading  # Para manejar la consulta manual en un hilo separado
 
 GPIO.setwarnings(False)
 
+
+
 class Contenedor:
     def __init__(self, capacidad_total, motor_pin, boton_pin, lcd):
         self.capacidad_total = capacidad_total  # Capacidad total del contenedor
@@ -50,9 +52,6 @@ class Contenedor:
             time.sleep(0.1)  # Reducir la carga de la CPU
 
     def confirmar_llenado(self):
-        """
-        Confirma que el contenedor ha sido llenado.
-        """
         self.cantidad_actual = self.capacidad_total
         self.estado = "lleno"
         self.lcd.clear()
@@ -70,10 +69,6 @@ class Contenedor:
         self.servo.ChangeDutyCycle(0)  # Apagar el servo para evitar sobrecalentamiento
 
     def dispensar_azucar(self, cantidad):
-        """
-        Dispensar una cantidad específica de azúcar.
-        :param cantidad: Cantidad de azúcar en gramos.
-        """
         if self.cantidad_actual <= 0:
             self.estado = "vacio"
             self.lcd.write("Azúcar vacío", line=1)
@@ -91,13 +86,16 @@ class Contenedor:
         self.controlar_motor(0)
 
         self.cantidad_actual -= cantidad  # Restar la cantidad dispensada
-        self.actualizar_estado()
+
+        if self.cantidad_actual <= 0:
+            self.actualizar_estado()  # Solo mostrar mensaje si el contenedor está vacío
+
         return f"Dispensado: {cantidad} g"
+
 
     def actualizar_estado(self):
         if self.cantidad_actual <= 0:
             self.estado = "vacio"
             self.lcd.write("Azúcar vacío", line=1)
-        else:
-            self.estado = "lleno"
-            self.lcd.write("Contenedor listo", line=1)
+        elif self.cantidad_actual > 0 and self.estado != "lleno":
+            self.estado = "parcial"  # No es lleno, pero tampoco vacío

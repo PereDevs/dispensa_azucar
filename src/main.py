@@ -1,4 +1,5 @@
 from classes.LCD_IC2_classe import LCD_I2C
+
 lcd = LCD_I2C()
 lcd.clear() 
 lcd.write("Cargando", line=1)
@@ -11,7 +12,6 @@ from classes.Usuario_class import UsuarioClass
 from classes.Reconocimiento_class import Reconocimiento
 from classes.taza_class import Taza
 from classes.Contenedor_Class import Contenedor
-
 import time
 
 
@@ -25,29 +25,65 @@ DB_CONFIG = {
 }
 DATASET_PATH = "/home/admin/dispensa_azucar/dataset"
 ENCODINGS_PATH = os.path.join(DATASET_PATH, "encodings.pickle")
-PIN_SENSOR_TAZA = 21
-PIN_MOTOR_CONTENEDOR1 = 18 
-PIN_BOTON_CONTENEDOR = 24  
+PIN_SENSOR_TAZA = 24
+PIN_BOTON = 18
+button = Button(PIN_BOTON)
+
+# Pines de los motores para cada contenedor
+PIN_MOTOR_CONTENEDOR1 = 21  # Azúcar blanco
+PIN_MOTOR_CONTENEDOR2 = 12  # Azúcar moreno
+PIN_MOTOR_CONTENEDOR3 = 26  # Edulcorante
+
+# Crear instancias de contenedores
+contenedor_blanco = Contenedor(capacidad_total=1000, motor_pin=PIN_MOTOR_CONTENEDOR1, boton_pin=PIN_BOTON, lcd=lcd)
+contenedor_moreno = Contenedor(capacidad_total=1000, motor_pin=PIN_MOTOR_CONTENEDOR2, boton_pin=PIN_BOTON, lcd=lcd)
+contenedor_edulcorante = Contenedor(capacidad_total=1000, motor_pin=PIN_MOTOR_CONTENEDOR3, boton_pin=PIN_BOTON, lcd=lcd)
+
 
 
 # Inicialización de dispositivos
 try:
     picam2 = Picamera2()
-    button = Button(24)  # GPIO 24 configurado para el botón físico
+    #button = Button(PIN_BOTON)  # GPIO 24 configurado para el botón físico
     taza = Taza(1)  # Modificado taza: Inicializar la clase Taza
-    taza = Taza(pin_sensor=PIN_SENSOR_TAZA)
-    contenedor = Contenedor(
-    capacidad_total=1000,  # Capacidad en gramos
-    motor_pin=PIN_MOTOR_CONTENEDOR1,
-    boton_pin=PIN_BOTON_CONTENEDOR,
-    lcd=lcd
-)
-    
-    
+    taza = Taza(pin_sensor=PIN_SENSOR_TAZA)   
     camera_active = False
 except Exception as e:
-    print(f"[ERROR] Problema con la inicialización de la cámara o el botón: {e}")
+    print(f"[ERROR] Problema coPn la inicialización de la cámara o el botón: {e}")
     exit(1)
+    
+def servir_azucar(usuario):
+    """
+    Sirve azúcar según las preferencias del usuario.
+    """
+    tipo_azucar = usuario.tipo_azucar  # 1: Blanco, 2: Moreno, 3: Edulcorante
+    cantidad = usuario.cantidad_azucar  # Cantidad en gramos
+
+    if tipo_azucar == "1":
+        resultado = contenedor_blanco.dispensar_azucar(cantidad)
+    elif tipo_azucar == "2":
+        resultado = contenedor_moreno.dispensar_azucar(cantidad)
+    elif tipo_azucar == "3":
+        resultado = contenedor_edulcorante.dispensar_azucar(cantidad)
+    else:
+        lcd.clear()
+        lcd.write("Error: Tipo", line=1)
+        lcd.write("de azúcar", line=2)
+        return "Error: Tipo de azúcar no válido"
+
+    if "Error" in resultado:
+        lcd.clear()
+        lcd.write("Error con el", line=1)
+        lcd.write("contenedor", line=2)
+        time.sleep(5)
+    else:
+        lcd.clear()
+        lcd.write("Azúcar listo!", line=1)
+        time.sleep(3)
+
+    return resultado
+
+
 
 
 def detener_camara():
@@ -58,6 +94,9 @@ def detener_camara():
         camera_active = False
         print("[INFO] Cámara detenida.")  # Log de depuración
 
+##################
+##################
+##################
 
 def proceso_principal():
     """Flujo principal del sistema."""
@@ -146,33 +185,43 @@ def proceso_principal():
             lcd.write(f"{usuario.nombre}", line=2)
             time.sleep(2)
 
-            #lcd.clear()
-            #lcd.write("Sirviendo", line=1)
             tipo_azucar = usuario.tipo_azucar  # Obtener tipo de azúcar del usuario
             cantidad_azucar = usuario.cantidad_azucar  # Cantidad en gramos
-            resultado = contenedor.dispensar_azucar(cantidad_azucar)
-            if "Error" in resultado:
-                lcd.clear()
-                lcd.write("Azúcar vacío", line=1)
-                lcd.write("Rellena", line=2)
-                time.sleep(5)
-            else:
-                lcd.write("Listo!", line=2)
-                time.sleep(3)
-                      
+        # Seleccionar el contenedor correcto en función del tipo de azúcar
+        if tipo_azucar == "1":  # Azúcar blanco
+            resultado = contenedor_blanco.dispensar_azucar(cantidad_azucar)
+        elif tipo_azucar == "2":  # Azúcar moreno
+            resultado = contenedor_moreno.dispensar_azucar(cantidad_azucar)
+        elif tipo_azucar == "3":  # Edulcorante
+            resultado = contenedor_edulcorante.dispensar_azucar(cantidad_azucar)
+        else:
+            lcd.clear()
+            lcd.write("Error: Tipo", line=1)
+            lcd.write("no válido", line=2)
+            time.sleep(3)
+            return  # Salir de la función si hay un error
 
+        # Comprobar el resultado de dispensar azúcar
+        if "Error" in resultado:
+            lcd.clear()
+            lcd.write("Azúcar vacío", line=1)
+            lcd.write("Rellena", line=2)
+            time.sleep(5)
+        else:
+            lcd.clear()
+            lcd.write("Listo!", line=2)
+            time.sleep(3)    
+        
             # Mostrar información básica del usuario
 
                         
             if id_usuario != "Desconocido":
                 # Simular servir azúcar
                 lcd.clear()
-                #lcd.write("Sirviendo", line=1)
-                #lcd.write("azucar...", line=2)
                 time.sleep(3)
 
                 # Registrar actividad en la base de datos
- # Crear instancia de UsuarioClass solo con el ID
+                # Crear instancia de UsuarioClass solo con el ID
                 usuarioconocido = UsuarioClass.from_db_by_id(
                 id_usuario=id_usuario,
                 db_config=DB_CONFIG,
@@ -180,6 +229,10 @@ def proceso_principal():
                 encodings_path=ENCODINGS_PATH
                 )
                 cantidad_servicio = None  # Se obtiene automáticamente para usuarios reconocidos
+                
+                    # Servir azúcar según las preferencias
+                resultado = servir_azucar(usuario)
+                print(f"[INFO] Resultado del servicio: {resultado}")
                 usuarioconocido.registrar_actividad(id_usuario, DB_CONFIG, cantidad_servicio)
 
                 # Mostrar información del usuario
