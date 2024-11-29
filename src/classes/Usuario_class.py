@@ -190,9 +190,8 @@ class UsuarioClass:
             # Log para iniciar servicio
             print(f"[INFO] Iniciando servicio de azucar para {self.nombre}.")
             print(f"[INFO] Dispensando {self.cantidad_azucar} de {nombre_tipo_azucar} para el usuario {self.nombre}.")
+            main.servir_azucar(self.id_usuario)
 
-            # Aquí podría conectarse a la lógica del servomotor para dispensar el azucar
-            print("[INFO] Dispensando azucar... (simulación)")
 
             self.registrar_actividad(self.id_usuario,self.db_config,self.cantidad_azucar)
 

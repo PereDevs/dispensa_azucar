@@ -36,7 +36,7 @@ class Reconocimiento:
         """
         Intenta reconocer una cara en un frame capturado.
         :param frame: Frame capturado por la cámara.
-        :return: ID del usuario reconocido o "Desconocido".
+        :return: ID del usuario reconocido (int) o None si es desconocido.
         """
         try:
             # Reducir resolución del frame para mejorar rendimiento
@@ -54,7 +54,7 @@ class Reconocimiento:
             for face_encoding in face_encodings:
                 # Comparar con las codificaciones conocidas
                 matches = face_recognition.compare_faces(self.known_face_encodings, face_encoding)
-                name = "Desconocido"
+                name = None  # Por defecto, usuario desconocido
 
                 # Calcular distancias y encontrar la mejor coincidencia
                 face_distances = face_recognition.face_distance(self.known_face_encodings, face_encoding)
@@ -66,16 +66,16 @@ class Reconocimiento:
                         lcd = LCD_I2C()
                         lcd.clear()
                         print(f"[INFO] Usuario reconocido: {name} (ID: {id_usuario})")
-                        return id_usuario
+                        return id_usuario  # Retorna el ID del usuario reconocido
 
-            # Si no hay coincidencias, retornar "Desconocido"
+            # Si no hay coincidencias, retornar None
             print("[INFO] Usuario desconocido.")
-            return "Desconocido"
-
+            return None
 
         except Exception as e:
             print(f"[ERROR] Problema durante el reconocimiento facial: {e}")
-            return "Desconocido"
+            return None
+
 
     def mostrar_informacion(self, lcd, idusuario):  # Modificado por CHATGPT 26/11/2024 15:30
         """Muestra la información del usuario en el LCD."""

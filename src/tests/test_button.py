@@ -2,7 +2,7 @@ import RPi.GPIO as GPIO
 import time
 
 # Configuración del GPIO
-BUTTON_PIN = 24   # Cambia este número al pin donde conectaste el botón
+BUTTON_PIN = 18   # Cambia este número al pin donde conectaste el botón
 
 GPIO.setmode(GPIO.BCM)  # Usa numeración BCM
 GPIO.setup(BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Configura resistencia pull-up interna

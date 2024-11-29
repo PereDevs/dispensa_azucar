@@ -24,8 +24,11 @@ DB_CONFIG = {
 DATASET_PATH = "/home/admin/dispensa_azucar/dataset"
 ENCODINGS_PATH = os.path.join(DATASET_PATH, "encodings.pickle")
 PIN_SENSOR_TAZA = 24
-PIN_BOTON = 18
-button = Button(PIN_BOTON)
+PIN_BOTON1 = 18
+PIN_BOTON2 = 19
+button1 = Button(PIN_BOTON1)
+button2 = Button(PIN_BOTON2)
+
 
 # Pines de los motores para cada contenedor
 PIN_MOTOR_CONTENEDOR1 = 21  # Azucar blanco
@@ -33,9 +36,9 @@ PIN_MOTOR_CONTENEDOR2 = 12  # Azucar moreno
 PIN_MOTOR_CONTENEDOR3 = 26  # Edulcorante
 
 # Crear instancias de contenedores
-contenedor_blanco = Contenedor(capacidad_total=100, motor_pin=PIN_MOTOR_CONTENEDOR1, boton_pin=PIN_BOTON, lcd=lcd, db_config = DB_CONFIG,tipo_azucar=1)
-contenedor_moreno = Contenedor(capacidad_total=100, motor_pin=PIN_MOTOR_CONTENEDOR2, boton_pin=PIN_BOTON, lcd=lcd,db_config = DB_CONFIG,tipo_azucar=2)
-contenedor_edulcorante = Contenedor(capacidad_total=100, motor_pin=PIN_MOTOR_CONTENEDOR3, boton_pin=PIN_BOTON, lcd=lcd,db_config = DB_CONFIG,tipo_azucar=3)
+contenedor_blanco = Contenedor(capacidad_total=100, motor_pin=PIN_MOTOR_CONTENEDOR1, boton_pin=PIN_BOTON1, lcd=lcd, db_config = DB_CONFIG,tipo_azucar=1)
+contenedor_moreno = Contenedor(capacidad_total=100, motor_pin=PIN_MOTOR_CONTENEDOR2, boton_pin=PIN_BOTON1, lcd=lcd,db_config = DB_CONFIG,tipo_azucar=2)
+contenedor_edulcorante = Contenedor(capacidad_total=100, motor_pin=PIN_MOTOR_CONTENEDOR3, boton_pin=PIN_BOTON1, lcd=lcd,db_config = DB_CONFIG,tipo_azucar=3)
 
 # Inicialización de dispositivos
 try:
@@ -122,8 +125,8 @@ def proceso_principal():
         id_usuario = reconocimiento.intentar_reconocer(frame)
         time.sleep(1)
 
-        if id_usuario == "Desconocido":
-            while id_usuario == "Desconocido":  # 28 Nov: Bucle para reintentar reconocimiento
+        if id_usuario is None:
+            while id_usuario is None:  # 28 Nov: Bucle para reintentar reconocimiento
                 lcd.clear()
                 lcd.write("Usuario no", line=1)
                 lcd.write("reconocido", line=2)
@@ -135,10 +138,10 @@ def proceso_principal():
                     id_usuario = UsuarioClass.obtener_nuevo_id(DB_CONFIG)
                     tipoazucar = input("Tipo de azucar (1 -Blanco 2-Moreno 3-Edulcorante): ").strip()
                     cantidadazucar = input("Cuántas cucharadas de azucar? ").strip()
-                    cantidadazucar_int = 4 * int(cantidadazucar)
+                    cantidadazucar_float = 4 * float(cantidadazucar)
 
                     nuevo_usuario = UsuarioClass(
-                        nombre, id_usuario, DB_CONFIG, DATASET_PATH, ENCODINGS_PATH, tipoazucar, cantidadazucar_int
+                        nombre, id_usuario, DB_CONFIG, DATASET_PATH, ENCODINGS_PATH, tipoazucar, cantidadazucar_float
                     )
                     if not nuevo_usuario.existe_en_db():
                         for i in range(5, 0, -1):
@@ -222,7 +225,7 @@ def main():
     while True:
         # Espera por pulsación del botón
         detener_camara()
-        button.wait_for_press()
+        button1.wait_for_press()
         lcd.clear()
         lcd.write("Procesando...", line=1)
         time.sleep(2)
