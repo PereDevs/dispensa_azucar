@@ -5,6 +5,8 @@ import time
 from classes.Modelo_Entrenamiento_Class import ModeloEntrenamiento
 from datetime import datetime
 
+from classes.LCD_IC2_classe import LCD_I2C
+import RPi.GPIO as GPIO
 
 
 class UsuarioClass:
@@ -20,6 +22,7 @@ class UsuarioClass:
         self.dataset_path = dataset_path
         self.encodings_path = encodings_path
         self.user_folder = os.path.join(dataset_path, str(id_usuario))
+        self.lcd = LCD_I2C()
 
     @classmethod
     def from_db_by_id(cls, id_usuario, db_config, dataset_path, encodings_path):
@@ -43,7 +46,7 @@ class UsuarioClass:
 
                 # Asegurarse de que los valores no sean None
                 if tipo_azucar is None:
-                    tipo_azucar = 'blanco'
+                    tipo_azucar = 1
                 if cantidad_azucar is None:
                     cantidad_azucar = 1
                     
@@ -143,6 +146,9 @@ class UsuarioClass:
         try:
         
             picam2.start()
+            self.lcd.clear()
+            self.lcd.write("Capturando en:", line=1)
+                
             while photo_count < max_photos:
                 frame = picam2.capture_array()
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -151,10 +157,13 @@ class UsuarioClass:
                 with open(filepath, "wb") as f:
                     Image.fromarray(frame).save(f, format="JPEG")
                 photo_count += 1
+                self.lcd.write(f"Foto {photo_count} de {max_photos}", line=1)
                 print(f"[INFO] Foto {photo_count} guardada en {filepath}")
                 time.sleep(delay_between_photos)
         finally:
             picam2.stop()
+            self.lcd.clear()
+            self.lcd.write("Captura completada.", line=1)
             print(f"[INFO] Captura completada. Total de fotos guardadas: {photo_count}.")
 
     def entrenar_usuario(self):
@@ -167,42 +176,45 @@ class UsuarioClass:
         except Exception as e:
             print(f"[ERROR] No se pudo entrenar el modelo para {self.nombre}: {e}")
     
-    
     def iniciar_servicio_azucar(self):
-        """Inicia el servicio de azucar usando los datos del usuario."""
-        
+        """Inicia el servicio de azúcar usando los datos del usuario."""
         try:
-            # Conectar a la base de datos para obtener el nombre del tipo de azucar
+            # Conectar a la base de datos para obtener el nombre del tipo de azúcar
             conn = mysql.connector.connect(**self.db_config)
             cursor = conn.cursor()
 
-            # Consulta para obtener el nombre del tipo de azucar
+            # Consulta para obtener el nombre del tipo de azúcar
             query = "SELECT descripcion FROM tipo_azucar WHERE id_azucar = %s"
             cursor.execute(query, (self.tipo_azucar,))
             result = cursor.fetchone()
 
-            # Validar si se encontró el tipo de azucar
+            # Validar si se encontró el tipo de azúcar
             if result:
                 nombre_tipo_azucar = result[0]
             else:
                 nombre_tipo_azucar = "Desconocido"
 
             # Log para iniciar servicio
-            print(f"[INFO] Iniciando servicio de azucar para {self.nombre}.")
+            #print(f"[INFO] Iniciando servicio de azúcar para {self.nombre}.")
+            self.lcd.clear()
+            self.lcd.write(f"Dispensando {self.cantidad_azucar}", line=1)
+            self.lcd.write(f"para el {self.nombre}", line=1)
             print(f"[INFO] Dispensando {self.cantidad_azucar} de {nombre_tipo_azucar} para el usuario {self.nombre}.")
-            main.servir_azucar(self.id_usuario)
 
+            # Llamar al método interno para servir azúcar
+            self.servir_azucar()
 
-            self.registrar_actividad(self.id_usuario,self.db_config,self.cantidad_azucar)
+            # Registrar la actividad en la base de datos
+            self.registrar_actividad(self.id_usuario, self.db_config, self.cantidad_azucar)
 
             # Aviso de finalización
-            print("[INFO] Proceso finalizado. El azucar ha sido servido.")
+            print("[INFO] Proceso finalizado. El azúcar ha sido servido.")
             time.sleep(5)
 
         except mysql.connector.Error as err:
-            print(f"[ERROR] No se pudo obtener el nombre del tipo de azucar: {err}")
+            print(f"[ERROR] No se pudo obtener el nombre del tipo de azúcar: {err}")
         except Exception as e:
-            print(f"[ERROR] No se pudo iniciar el servicio de azucar: {e}")
+            print(f"[ERROR] No se pudo iniciar el servicio de azúcar: {e}")
         finally:
             # Cerrar la conexión a la base de datos
             if cursor:
@@ -210,9 +222,64 @@ class UsuarioClass:
             if conn:
                 conn.close()
 
-        # Volver al método main() después de completar el servicio
-        from main import main  # Importar al final para evitar ciclos de importación
-        main.main()
+    def servir_azucar(self):
+        from main import PIN_MOTOR_CONTENEDOR1, PIN_MOTOR_CONTENEDOR2, PIN_MOTOR_CONTENEDOR3
+
+        """Sirve azúcar utilizando los motores definidos en main.py."""
+        # Configuración de pines
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setup(PIN_MOTOR_CONTENEDOR1, GPIO.OUT)
+        GPIO.setup(PIN_MOTOR_CONTENEDOR2, GPIO.OUT)
+        GPIO.setup(PIN_MOTOR_CONTENEDOR3, GPIO.OUT)
+
+        # Diccionario para mapear tipo de azúcar a los pines de los motores
+        azucar_a_motor = {
+            "blanco": PIN_MOTOR_CONTENEDOR1,
+            "moreno": PIN_MOTOR_CONTENEDOR2,
+            "edulcorante": PIN_MOTOR_CONTENEDOR3,
+        }
+
+        # Obtener el pin correspondiente al tipo de azúcar
+        motor_pin = azucar_a_motor.get(self.tipo_azucar.lower())
+
+        if not motor_pin:
+            print(f"[ERROR] Tipo de azúcar desconocido: {self.tipo_azucar}")
+            self.lcd.clear()
+            self.lcd.write("Error: tipo azucar")
+            return
+
+        try:
+            # Inicializar PWM para el motor correspondiente
+            pwm_motor = GPIO.PWM(motor_pin, 50)  # Frecuencia de 50Hz
+            pwm_motor.start(7.5)  # Posición inicial (0 grados)
+
+            self.lcd.clear()
+            self.lcd.write("Sirviendo azucar")
+            print(f"[INFO] Sirviendo {self.cantidad_azucar} de {self.tipo_azucar} para {self.nombre}.")
+
+            # Girar el motor para dispensar azúcar
+            pwm_motor.ChangeDutyCycle(5)  # Girar a -90 grados
+            time.sleep(0.5 * self.cantidad_azucar)  # Tiempo proporcional a la cantidad de azúcar
+
+            # Volver a la posición inicial
+            pwm_motor.ChangeDutyCycle(7.5)  # Volver a 0 grados
+            time.sleep(0.5)
+
+            # Detener el motor
+            pwm_motor.stop()
+
+            # Mensaje de éxito
+            self.lcd.clear()
+            self.lcd.write("Azucar servido")
+            print("[INFO] Azúcar servido correctamente.")
+
+        except Exception as e:
+            print(f"[ERROR] Falló el servicio de azúcar: {e}")
+            self.lcd.clear()
+            self.lcd.write("Error serv azucar")
+        finally:
+            # Limpiar configuración de GPIO
+            GPIO.cleanup()
 
     def registrar_actividad(self, id_usuario, db_config, cantidad_servicio=None):
         """

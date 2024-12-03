@@ -1,0 +1,51 @@
+import RPi.GPIO as GPIO
+import time
+
+# Pines de los servos
+PIN_MOTOR_CONTENEDOR1 = 20  # Azúcar blanco
+PIN_MOTOR_CONTENEDOR2 = 12  # Azúcar moreno
+PIN_MOTOR_CONTENEDOR3 = 26  # Edulcorante
+
+# Configuración de GPIO
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(PIN_MOTOR_CONTENEDOR1, GPIO.OUT)
+GPIO.setup(PIN_MOTOR_CONTENEDOR2, GPIO.OUT)
+GPIO.setup(PIN_MOTOR_CONTENEDOR3, GPIO.OUT)
+
+# Configurar PWM para los servos
+servo1 = GPIO.PWM(PIN_MOTOR_CONTENEDOR1, 50)  # Frecuencia de 50Hz
+servo2 = GPIO.PWM(PIN_MOTOR_CONTENEDOR2, 50)
+servo3 = GPIO.PWM(PIN_MOTOR_CONTENEDOR3, 50)
+
+# Iniciar PWM con posición 0
+servo1.start(7.5)  # Posición inicial (0 grados)
+servo2.start(7.5)
+servo3.start(7.5)
+
+# Función para mover todos los motores a 0 grados
+def reset_all_motors():
+    print("Moviendo todos los motores a posición 0...")
+    servo1.ChangeDutyCycle(7.5)  # 0 grados
+    servo2.ChangeDutyCycle(7.5)
+    servo3.ChangeDutyCycle(7.5)
+    time.sleep(0.5)  # Esperar 0.5 segundos para que los motores se estabilicen
+
+try:
+    while True:
+        # Girar los motores a -90 grados
+        print("Girando todos los motores a -90 grados...")
+        servo1.ChangeDutyCycle(10)  # -90 grados
+        servo2.ChangeDutyCycle(10)
+        servo3.ChangeDutyCycle(10)
+        time.sleep(0.5)
+
+     
+
+except KeyboardInterrupt:
+    reset_all_motors()
+    print("Finalizando programa...")
+    # Detener PWM y limpiar los pines GPIO
+    servo1.stop()
+    servo2.stop()
+    servo3.stop()
+    GPIO.cleanup()

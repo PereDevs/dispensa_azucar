@@ -3,10 +3,10 @@ import time
 
 # Configuración
 GPIO.setmode(GPIO.BCM)
-GPIO.setup(18, GPIO.OUT)
+GPIO.setup(21, GPIO.OUT)
 
 # Iniciar PWM
-pwm = GPIO.PWM(18, 50)  # 50 Hz es la frecuencia típica para servos
+pwm = GPIO.PWM(21, 50)  # 50 Hz es la frecuencia típica para servos
 pwm.start(0)  # Inicia con un duty cycle de 0%
 
 try:

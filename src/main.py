@@ -6,7 +6,7 @@ lcd.write("Cargando", line=1)
 lcd.write("Espera...", line=2)
 
 import os
-from gpiozero import Button
+from gpiozero import Button,Device
 from picamera2 import Picamera2
 from classes.Usuario_class import UsuarioClass
 from classes.Reconocimiento_class import Reconocimiento
@@ -26,12 +26,14 @@ ENCODINGS_PATH = os.path.join(DATASET_PATH, "encodings.pickle")
 PIN_SENSOR_TAZA = 24
 PIN_BOTON1 = 18
 PIN_BOTON2 = 19
+PIN_BOTON3 = 21
 button1 = Button(PIN_BOTON1)
 button2 = Button(PIN_BOTON2)
+button3 = Button(PIN_BOTON3)
 
 
 # Pines de los motores para cada contenedor
-PIN_MOTOR_CONTENEDOR1 = 21  # Azucar blanco
+PIN_MOTOR_CONTENEDOR1 = 20 # Azucar blanco
 PIN_MOTOR_CONTENEDOR2 = 12  # Azucar moreno
 PIN_MOTOR_CONTENEDOR3 = 26  # Edulcorante
 
@@ -49,44 +51,7 @@ except Exception as e:
     print(f"[ERROR] Problema con la inicialización de la cámara o el botón: {e}")
     exit(1)
 
-def servir_azucar(usuario):
-    """
-    Sirve azucar según las preferencias del usuario.
-    """
-    tipo_azucar = usuario.tipo_azucar  # 1: Blanco, 2: Moreno, 3: Edulcorante
-    cantidad = usuario.cantidad_azucar  # Cantidad en gramos
 
-    if tipo_azucar == 1:
-        resultado = contenedor_blanco.dispensar_azucar(cantidad)
-    elif tipo_azucar == 2:
-        resultado = contenedor_moreno.dispensar_azucar(cantidad)
-    elif tipo_azucar == 3:
-        resultado = contenedor_edulcorante.dispensar_azucar(cantidad)
-    else:
-        lcd.clear()
-        lcd.write("Error: Tipo", line=1)
-        lcd.write("de azucar", line=2)
-        return "Error: Tipo de azucar no válido"
-
-    if "Error" in resultado:
-        lcd.clear()
-        lcd.write("Error con el", line=1)
-        lcd.write("contenedor", line=2)
-        time.sleep(5)
-    else:
-        lcd.clear()
-        lcd.write("Azucar listo!", line=1)
-        time.sleep(3)
-
-    return resultado
-
-def detener_camara():
-    """Detiene la cámara si está activa."""
-    global camera_active
-    if camera_active:
-        picam2.stop()
-        camera_active = False
-        print("[INFO] Cámara detenida.")  # Log de depuración
 
 def proceso_principal():
     """Flujo principal del sistema."""
@@ -150,9 +115,7 @@ def proceso_principal():
                             lcd.write(f"{i}...mira a camara", line=2)
                             time.sleep(1)
 
-                        lcd.clear()
-                        lcd.write("Capturando...", line=1)
-                        time.sleep(2)
+                        
                         nuevo_usuario.capturar_imagenes(picam2)
 
                         lcd.clear()
@@ -174,14 +137,16 @@ def proceso_principal():
                     id_usuario = reconocimiento.intentar_reconocer(frame)
 
             # Cuando se reconoce el usuario, continuar el flujo
+        if id_usuario:
             lcd.clear()
-            lcd.write("Bienvenido", line=1)
+            
             usuario = UsuarioClass.from_db_by_id(
                 id_usuario=id_usuario,
                 db_config=DB_CONFIG,
                 dataset_path=DATASET_PATH,
                 encodings_path=ENCODINGS_PATH
             )
+            lcd.write("Bienvenido", line=1)
             lcd.write(f"{usuario.nombre}", line=2)
             time.sleep(2)
 
@@ -203,7 +168,9 @@ def proceso_principal():
         lcd.write("detenido", line=2)
         time.sleep(5)
         lcd.clear()
+        gpiozero.Device.close_all()
         exit(0)
+        
     except Exception as e:
         lcd.clear()
         lcd.write("Error", line=1)
@@ -211,16 +178,56 @@ def proceso_principal():
         print(f"[ERROR] {e}")
         time.sleep(5)
         lcd.clear()
+        lcd.close()
     finally:
         detener_camara()  # Detener la cámara siempre al finalizar
         print("[INFO] Retornando al estado de espera del botón.")  # Log de depuración
         main()
+        
+def servir_azucar(usuario):
+    """
+    Sirve azucar según las preferencias del usuario.
+    """
+    tipo_azucar = usuario.tipo_azucar  # 1: Blanco, 2: Moreno, 3: Edulcorante
+    cantidad = usuario.cantidad_azucar  # Cantidad en gramos
+
+    if tipo_azucar == 1:
+        resultado = contenedor_blanco.dispensar_azucar(cantidad)
+    elif tipo_azucar == 2:
+        resultado = contenedor_moreno.dispensar_azucar(cantidad)
+    elif tipo_azucar == 3:
+        resultado = contenedor_edulcorante.dispensar_azucar(cantidad)
+    else:
+        lcd.clear()
+        lcd.write("Error: Tipo", line=1)
+        lcd.write("de azucar", line=2)
+        return "Error: Tipo de azucar no válido"
+
+    if "Error" in resultado:
+        lcd.clear()
+        lcd.write("Error con el", line=1)
+        lcd.write("contenedor", line=2)
+        time.sleep(5)
+    else:
+        lcd.clear()
+        lcd.write("Azucar listo!", line=1)
+        time.sleep(3)
+
+    return resultado
+
+def detener_camara():
+    """Detiene la cámara si está activa."""
+    global camera_active
+    if camera_active:
+        picam2.stop()
+        camera_active = False
+        print("[INFO] Cámara detenida.")  # Log de depuración        
 
 def main():
     """Bucle principal de espera por botón."""
     lcd.clear()
-    lcd.write("Pulsa boton", line=1)
-    lcd.write("para azucar", line=2)
+    lcd.write("Pulsa enter", line=1)
+    lcd.write("para el azucar", line=2)
 
     while True:
         # Espera por pulsación del botón

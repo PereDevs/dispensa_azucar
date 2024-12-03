@@ -116,11 +116,11 @@ class Reconocimiento:
                 lcd.clear()
                 lcd.write(f" {user_info['nombre']}, te muestro", line=1)  # Cambiado de 'nombreclear' a 'nombre'
                 lcd.write("consumo 30 dias", line=2)  # Cambiado de 'nombreclear' a 'nombre'
-                time.sleep(5)
+                time.sleep(3)
                 lcd.clear()
                 lcd.write(f"Tipo: {tipo_azucar}", line=1)  # Cambiado de 'nombreclear' a 'nombre'
                 lcd.write(f"Consumo: {cantidad_consumida}", line=2)
-                time.sleep(5)
+                time.sleep(3)
                 
             else:
                 lcd.clear()

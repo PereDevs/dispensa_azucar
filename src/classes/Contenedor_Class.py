@@ -146,11 +146,25 @@ class Contenedor:
         else:
             self.estado = "lleno"
 
+
     def controlar_motor(self, angulo):
         """
         Controla el motor moviéndolo al ángulo deseado.
+        Asegura que el motor comience desde la posición 0 antes de realizar el movimiento.
         """
-        duty_cycle = 2 + (angulo / 18)  # Convertir ángulo a ciclo de trabajo
-        self.servo.ChangeDutyCycle(duty_cycle)
-        time.sleep(1)
-        self.servo.ChangeDutyCycle(0)
+        try:
+            # Mover el motor a la posición inicial (0 grados)
+            self.servo.ChangeDutyCycle(7.5)  # Duty cycle para 0 grados
+            time.sleep(0.5)  # Tiempo para asegurar la posición inicial
+
+            # Calcular el ciclo de trabajo para el ángulo deseado
+            duty_cycle = 2 + (angulo / 18)  # Convertir ángulo a ciclo de trabajo
+            self.servo.ChangeDutyCycle(duty_cycle)
+            time.sleep(2)  # Tiempo para completar el movimiento
+
+            # Detener el motor
+            self.servo.ChangeDutyCycle(7.5)  # Duty cycle para 0 grado
+            time.sleep(0.5)  # Tiempo para asegurar la posición inicial
+            self.servo.ChangeDutyCycle(0)
+        except Exception as e:
+            print(f"[ERROR] No se pudo controlar el motor: {e}")
