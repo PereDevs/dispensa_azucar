@@ -17,10 +17,15 @@ class Contenedor:
         self.cantidad_actual = self.obtener_cantidad_actual()  # Cantidad disponible desde la base de datos
         self.estado = "lleno" if self.cantidad_actual > 0 else "vacio"
 
-        # Configuración del hardware
+               # Configuración del hardware
         GPIO.setmode(GPIO.BCM)
-        GPIO.setup(self.motor_pin, GPIO.OUT)
-        GPIO.setup(self.boton_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        GPIO.setup(self.motor_pin, GPIO.OUT)  # Siempre configura el motor
+
+        # Configuración del botón
+        if isinstance(self.boton_pin, int):  # Si es un número, configúralo
+            GPIO.setup(self.boton_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+            
+        
         self.servo = GPIO.PWM(self.motor_pin, 50)
         self.servo.start(0)
 

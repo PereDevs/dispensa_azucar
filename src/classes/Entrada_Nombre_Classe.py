@@ -6,9 +6,9 @@ class EntradaDatos:
         """
         :param modo: Puede ser 'nombre', 'cantidad' o 'tipo'.
         """
-        self.boton_adelante = Button(pin_boton_adelante)
-        self.boton_atras = Button(pin_boton_atras)
-        self.boton_confirmar = Button(pin_boton_confirmar, hold_time=3)
+        self.boton_adelante = pin_boton_adelante
+        self.boton_atras = pin_boton_atras
+        self.boton_confirmar = pin_boton_confirmar
         self.lcd = lcd
 
         # Modos
@@ -60,17 +60,11 @@ class EntradaDatos:
         if not self.enviando:
             if self.modo == "nombre":
                 letra = self.alfabeto[self.indice_letra]
+                print(f"[DEBUG] Letra seleccionada: {letra}")
                 if letra != " " or self.nombre:  # Evita múltiples espacios iniciales
                     self.nombre += letra
+                    print(f"[DEBUG] Nombre actual: {self.nombre}")
                 self.indice_letra = 0  # Reinicia al espacio en blanco
-            elif self.modo == "cantidad":
-                numero = self.numeros[self.indice_letra]
-                if numero != "." or "." not in self.cantidad:  # Evitar múltiples puntos
-                    self.cantidad += numero
-                self.indice_letra = 0  # Reinicia al espacio en blanco
-            elif self.modo == "tipo":
-                # No requiere confirmación en modo tipo, ya selecciona directamente
-                pass
             self.mostrar_estado()
 
     def enviar_datos(self):

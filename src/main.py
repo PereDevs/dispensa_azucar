@@ -7,11 +7,13 @@ lcd.write("Espera...", line=2)
 
 import os
 from gpiozero import Button,Device
+import RPi.GPIO as GPIO
 from picamera2 import Picamera2
 from classes.Usuario_class import UsuarioClass
 from classes.Reconocimiento_class import Reconocimiento
 from classes.taza_class import Taza
 from classes.Contenedor_Class import Contenedor
+from classes.Entrada_Nombre_Classe import EntradaDatos
 import time
 
 # Configuración
@@ -27,20 +29,27 @@ PIN_SENSOR_TAZA = 24
 PIN_BOTON1 = 18
 PIN_BOTON2 = 19
 PIN_BOTON3 = 21
-button1 = Button(PIN_BOTON1)
-button2 = Button(PIN_BOTON2)
-button3 = Button(PIN_BOTON3)
-
 
 # Pines de los motores para cada contenedor
 PIN_MOTOR_CONTENEDOR1 = 20 # Azucar blanco
 PIN_MOTOR_CONTENEDOR2 = 12  # Azucar moreno
 PIN_MOTOR_CONTENEDOR3 = 26  # Edulcorante
 
+try:
+    GPIO.cleanup()
+except RuntimeWarning:
+    pass  # Ignora el error si ya están limpios
+
+
+button1 = Button(PIN_BOTON1)
+button2 = Button(PIN_BOTON2)
+button3 = Button(PIN_BOTON3)
+
+
 # Crear instancias de contenedores
-contenedor_blanco = Contenedor(capacidad_total=100, motor_pin=PIN_MOTOR_CONTENEDOR1, boton_pin=PIN_BOTON1, lcd=lcd, db_config = DB_CONFIG,tipo_azucar=1)
-contenedor_moreno = Contenedor(capacidad_total=100, motor_pin=PIN_MOTOR_CONTENEDOR2, boton_pin=PIN_BOTON1, lcd=lcd,db_config = DB_CONFIG,tipo_azucar=2)
-contenedor_edulcorante = Contenedor(capacidad_total=100, motor_pin=PIN_MOTOR_CONTENEDOR3, boton_pin=PIN_BOTON1, lcd=lcd,db_config = DB_CONFIG,tipo_azucar=3)
+contenedor_blanco = Contenedor(capacidad_total=100, motor_pin=PIN_MOTOR_CONTENEDOR1, boton_pin=button1, lcd=lcd, db_config = DB_CONFIG,tipo_azucar=1)
+contenedor_moreno = Contenedor(capacidad_total=100, motor_pin=PIN_MOTOR_CONTENEDOR2, boton_pin=button1, lcd=lcd,db_config = DB_CONFIG,tipo_azucar=2)
+contenedor_edulcorante = Contenedor(capacidad_total=100, motor_pin=PIN_MOTOR_CONTENEDOR3, boton_pin=button1, lcd=lcd,db_config = DB_CONFIG,tipo_azucar=3)
 
 # Inicialización de dispositivos
 try:
@@ -98,12 +107,40 @@ def proceso_principal():
 
                 intentos = int(input("¿Intentar registro? (1 para sí, 0 para no): "))
                 if intentos == 1:
-                    # Registro de nuevo usuario
-                    nombre = input("Introduce el nombre del usuario: ").strip()
+                    # # Registro de nuevo usuario
+                    # nombre = input("Introduce el nombre del usuario: ").strip()
+                    # id_usuario = UsuarioClass.obtener_nuevo_id(DB_CONFIG)
+                    # tipoazucar = input("Tipo de azucar (1 -Blanco 2-Moreno 3-Edulcorante): ").strip()
+                    # cantidadazucar = input("Cuántas cucharadas de azucar? ").strip()
+                    # cantidadazucar_float = 4 * float(cantidadazucar)
+                    
+                    # Crear instancias de EntradaDatos para cada tipo de entrada
+                    entrada_nombre = EntradaDatos(pin_boton_adelante=button3, pin_boton_atras=button2, pin_boton_confirmar=button1, lcd=lcd, modo="nombre")
+                    entrada_tipo = EntradaDatos(pin_boton_adelante=button3, pin_boton_atras=button2, pin_boton_confirmar=button1, lcd=lcd, modo="tipo")
+                    entrada_cantidad = EntradaDatos(pin_boton_adelante=button3, pin_boton_atras=button2, pin_boton_confirmar=button1, lcd=lcd, modo="cantidad")
+
+                    # Capturar nombre del usuario
+                    lcd.clear()
+                    lcd.write("Nombre", line=1)
+                    entrada_nombre.run()  # Esto espera hasta que el usuario confirme su nombre
+                    nombre = entrada_nombre.nombre.strip()  # Guardar el nombre ingresado
+
+                    # Capturar tipo de azúcar
+                    lcd.clear()
+                    lcd.write("Selecciona tipo", line=1)
+                    entrada_tipo.run()  # Esto espera hasta que el usuario confirme el tipo
+                    tipoazucar = entrada_tipo.indice_tipo + 1  # Convertir índice a valor numérico (1, 2, 3)
+
+                    # Capturar cantidad de azúcar
+                    lcd.clear()
+                    lcd.write("Introduce", line=1)
+                    lcd.write("cantidad:", line=2)
+                    entrada_cantidad.run()  # Esto espera hasta que el usuario confirme la cantidad
+                    cantidadazucar = entrada_cantidad.cantidad.strip()
+                    cantidadazucar_float = 4 * float(cantidadazucar)  # Convertir a gramos
+
+                    # Obtener nuevo ID para el usuario
                     id_usuario = UsuarioClass.obtener_nuevo_id(DB_CONFIG)
-                    tipoazucar = input("Tipo de azucar (1 -Blanco 2-Moreno 3-Edulcorante): ").strip()
-                    cantidadazucar = input("Cuántas cucharadas de azucar? ").strip()
-                    cantidadazucar_float = 4 * float(cantidadazucar)
 
                     nuevo_usuario = UsuarioClass(
                         nombre, id_usuario, DB_CONFIG, DATASET_PATH, ENCODINGS_PATH, tipoazucar, cantidadazucar_float
