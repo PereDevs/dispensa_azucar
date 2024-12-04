@@ -1,5 +1,7 @@
 from classes.LCD_IC2_classe import LCD_I2C
+import RPi.GPIO as GPIO
 
+GPIO.cleanup()
 lcd = LCD_I2C()
 lcd.clear() 
 lcd.write("Cargando", line=1)
@@ -7,7 +9,6 @@ lcd.write("Espera...", line=2)
 
 import os
 from gpiozero import Button,Device
-import RPi.GPIO as GPIO
 from picamera2 import Picamera2
 from classes.Usuario_class import UsuarioClass
 from classes.Reconocimiento_class import Reconocimiento
@@ -41,9 +42,9 @@ except RuntimeWarning:
     pass  # Ignora el error si ya están limpios
 
 
-button1 = Button(PIN_BOTON1)
-button2 = Button(PIN_BOTON2)
-button3 = Button(PIN_BOTON3)
+button1 = Button(PIN_BOTON1, bounce_time=0.02)
+button2 = Button(PIN_BOTON2, bounce_time=0.02)
+button3 = Button(PIN_BOTON3, bounce_time=0.02)
 
 
 # Crear instancias de contenedores
@@ -114,17 +115,27 @@ def proceso_principal():
                     # cantidadazucar = input("Cuántas cucharadas de azucar? ").strip()
                     # cantidadazucar_float = 4 * float(cantidadazucar)
                     
+                    button1.when_pressed = None
+                    button2.when_pressed = None
+                    button3.when_pressed = None
+                    
                     # Crear instancias de EntradaDatos para cada tipo de entrada
-                    entrada_nombre = EntradaDatos(pin_boton_adelante=button3, pin_boton_atras=button2, pin_boton_confirmar=button1, lcd=lcd, modo="nombre")
-                    entrada_tipo = EntradaDatos(pin_boton_adelante=button3, pin_boton_atras=button2, pin_boton_confirmar=button1, lcd=lcd, modo="tipo")
-                    entrada_cantidad = EntradaDatos(pin_boton_adelante=button3, pin_boton_atras=button2, pin_boton_confirmar=button1, lcd=lcd, modo="cantidad")
+                    entrada_nombre = EntradaDatos(pin_boton_adelante=button2, pin_boton_atras=button3, pin_boton_confirmar=button1, lcd=lcd, modo="nombre")
+                    entrada_tipo = EntradaDatos(pin_boton_adelante=button2, pin_boton_atras=button3, pin_boton_confirmar=button1, lcd=lcd, modo="tipo")
+                    entrada_cantidad = EntradaDatos(pin_boton_adelante=button2, pin_boton_atras=button3, pin_boton_confirmar=button1, lcd=lcd, modo="cantidad")
 
-                    # Capturar nombre del usuario
+                    # Detener todos los procesos paralelos antes de capturar datos
+                    detener_camara()
                     lcd.clear()
-                    lcd.write("Nombre", line=1)
-                    entrada_nombre.run()  # Esto espera hasta que el usuario confirme su nombre
-                    nombre = entrada_nombre.nombre.strip()  # Guardar el nombre ingresado
 
+                    # Capturar nombre
+                    lcd.write("Introduce tu", line=1)
+                    lcd.write("nombre:", line=2)
+                    entrada_nombre.run()
+                    nombre = entrada_nombre.nombre.strip()
+                    if not nombre:
+                        raise ValueError("Nombre vacío. Inténtalo nuevamente.")
+                    
                     # Capturar tipo de azúcar
                     lcd.clear()
                     lcd.write("Selecciona tipo", line=1)
