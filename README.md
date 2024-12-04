@@ -1,15 +1,10 @@
-Aquí tienes el contenido del documento convertido en formato Markdown para utilizarlo como README en GitHub:
+Aquí tienes el documento convertido a formato Markdown para que lo uses como README en GitHub:
 
 # Proyecto: Dispensador Inteligente de Azúcar
 
-## Curso
-Prototipos IoT
-
-## Alumno
-Pere Martin
-
-## Fecha
-05/12/2024
+**Curso:** Prototipos IoT  
+**Alumno:** Pere Martin  
+**Fecha:** 05/12/2024  
 
 ---
 
@@ -44,18 +39,16 @@ El reconocimiento facial es el núcleo del sistema. Utiliza una cámara conectad
 - Su encoding facial (generado por `dlib`).
 - Sus preferencias de tipo de azúcar y cantidad (almacenadas en la base de datos).
 
-Cuando el sistema detecta a un usuario registrado, carga automáticamente sus preferencias, simplificando el proceso y eliminando la necesidad de introducir datos manualmente.
-
-**Desafíos en esta parte:**
+**Desafíos en esta parte:**  
 Implementar `dlib` en la Raspberry Pi fue complejo debido a las limitaciones de recursos del dispositivo. Esto me llevó a crear una imagen Debian optimizada para incluir las dependencias necesarias y reducir la carga de procesamiento.
 
 ### 2. Interfaz de Usuario con Pulsadores y Pantalla LCD
 
 La interacción con el usuario se realiza mediante pulsadores y una pantalla LCD conectada mediante el protocolo I2C. Esta pantalla muestra mensajes en tiempo real, como:
 
-- Instrucciones iniciales: "Sistema listo. Reconociendo usuario."
-- Solicitudes de entrada: "Ingrese número de cucharadas (en gramos): _".
-- Notificaciones: "Dispensando azúcar moreno…" o "Coloque una taza para continuar."
+- Instrucciones iniciales: “Sistema listo. Reconociendo usuario.”
+- Solicitudes de entrada: “Ingrese número de cucharadas (en gramos): _”.
+- Notificaciones: “Dispensando azúcar moreno…” o “Coloque una taza para continuar.”
 
 El sistema permite que el usuario ajuste manualmente la cantidad de azúcar utilizando los pulsadores si lo desea. Sin embargo, esta funcionalidad quedó parcialmente desarrollada para registrar nuevos usuarios y configuraciones completas desde la interfaz física.
 
@@ -67,7 +60,8 @@ Para garantizar que el azúcar no se dispense sin un recipiente debajo, se integ
 
 Cada tipo de azúcar está asociado a un motor DC independiente, controlado mediante señales PWM. Estos motores regulan una trampilla que dispensa el azúcar desde un embudo hacia el recipiente. La cantidad dispensada se calcula en función del tiempo de activación del motor, lo que permite una dosificación precisa.
 
-Sin embargo, uno de los mayores problemas fue lograr la alineación exacta entre el embudo y la trampilla del motor. La estructura inicial, hecha de cartón, no proporcionaba la rigidez necesaria para mantener un espacio constante de **1 mm**, lo que resultaba en pérdidas de azúcar o cantidades inexactas. Este problema subrayó la necesidad de usar materiales más robustos en futuras versiones.
+**Problema:**  
+La estructura inicial, hecha de cartón, no proporcionaba la rigidez necesaria para mantener un espacio constante de **1 mm**, lo que resultaba en pérdidas de azúcar o cantidades inexactas. Este problema subrayó la necesidad de usar materiales más robustos en futuras versiones.
 
 ---
 
@@ -122,18 +116,21 @@ El diseño del software es modular, lo que facilita el mantenimiento y las futur
 ## Problemas y Desafíos Durante el Desarrollo
 
 ### 1. Instalación de Dlib
-La instalación de `dlib` en la Raspberry Pi fue compleja debido a los recursos limitados. Creé una imagen Debian personalizada para incluir solo las librerías necesarias y optimizar el rendimiento.
+
+Instalar `dlib` en la Raspberry Pi fue complicado debido a sus altos requisitos de memoria y procesamiento. Tras varios intentos fallidos, creé una imagen Debian personalizada para reducir la carga del sistema operativo y optimizar el rendimiento.
 
 ### 2. Entrada de Datos
-La funcionalidad para introducir datos desde los pulsadores quedó incompleta debido a la complejidad de la interfaz y la falta de tiempo.
+
+La funcionalidad de entrada de datos desde pulsadores quedó incompleta debido a la falta de tiempo y a la complejidad de diseñar una interfaz fluida sin teclado físico.
 
 ### 3. Diseño Mecánico
-El prototipo inicial, construido con cartón, no era lo suficientemente rígido, lo que generó problemas en la alineación de los motores y los embudos.
+
+El prototipo inicial de cartón no era suficientemente robusto, lo que generó problemas de alineación y estabilidad. En futuras versiones, sería ideal usar materiales más resistentes como madera o plástico.
 
 ---
 
 ## Reflexión General
 
-Este proyecto no solo fue un ejercicio técnico, sino también una experiencia de aprendizaje integral. Los problemas enfrentados me ayudaron a mejorar habilidades técnicas y a reflexionar sobre cómo planificar y priorizar elementos clave en proyectos futuros.
+Cada desafío del proyecto me permitió aprender y mejorar habilidades tanto técnicas como de planificación. La instalación de `dlib` me enseñó la importancia de preparar adecuadamente el entorno de desarrollo. Los problemas mecánicos subrayaron la relevancia de usar materiales adecuados desde el principio. Este proyecto establece una base sólida para continuar innovando y expandiendo sus capacidades.
 
-Copia y pega este contenido directamente en el archivo README.md de tu repositorio en GitHub. ¡Avísame si necesitas algo más! 😊
+Copia y pega este texto directamente en el archivo README.md de tu repositorio en GitHub. Avísame si necesitas algo más o ajustes adicionales. 😊
