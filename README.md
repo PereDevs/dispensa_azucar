@@ -1,4 +1,3 @@
-Aquí tienes el documento convertido a formato Markdown para que lo uses como README en GitHub:
 
 # Proyecto: Dispensador Inteligente de Azúcar
 
