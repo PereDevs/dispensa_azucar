@@ -109,8 +109,8 @@ def proceso_principal():
                 # entrada_registro = EntradaDatos(pin_boton_adelante=b_adelante, pin_boton_atras=b_atras, pin_boton_confirmar=b_confirma, lcd=lcd, modo="registro")
                 # entrada_registro.run()
 
-                # intentos = int(input("¿Intentar registro? (1 para sí, 0 para no): "))
-                intentos = int(entrada_registro.cantidad)  # 1 para "Sí", 0 para "No"
+                intentos = int(input("¿Intentar registro? (1 para sí, 0 para no): "))
+                #intentos = int(entrada_registro.cantidad)  # 1 para "Sí", 0 para "No"
 
                 if intentos == 1:
                     # # Registro de nuevo usuario
