@@ -32,29 +32,28 @@ class EntradaDatos:
 
     def mover_adelante(self):
         if not self.enviando:
-            if self.modo == "nombre":
+            if self.modo == "registro":
+                self.indice_tipo = (self.indice_tipo + 1) % 2  # Alternar entre 0 y 1
+            elif self.modo == "nombre":
                 self.indice_letra = (self.indice_letra + 1) % len(self.alfabeto)
-                time.sleep(0.02)
             elif self.modo == "cantidad":
                 self.indice_letra = (self.indice_letra + 1) % len(self.numeros)
-                time.sleep(0.02)
             elif self.modo == "tipo":
                 self.indice_tipo = (self.indice_tipo + 1) % len(self.tipos_azucar)
-                time.sleep(0.02)
             self.mostrar_estado()
 
     def mover_atras(self):
         if not self.enviando:
-            if self.modo == "nombre":
+            if self.modo == "registro":
+                self.indice_tipo = (self.indice_tipo - 1) % 2  # Alternar entre 0 y 1
+            elif self.modo == "nombre":
                 self.indice_letra = (self.indice_letra - 1) % len(self.alfabeto)
-                time.sleep(0.02)
             elif self.modo == "cantidad":
                 self.indice_letra = (self.indice_letra - 1) % len(self.numeros)
-                time.sleep(0.02)
             elif self.modo == "tipo":
                 self.indice_tipo = (self.indice_tipo - 1) % len(self.tipos_azucar)
-                time.sleep(0.02)
             self.mostrar_estado()
+
 
     def confirmar_opcion(self):
         if not self.enviando:
@@ -65,7 +64,16 @@ class EntradaDatos:
                     self.nombre += letra
                     print(f"[DEBUG] Nombre actual: {self.nombre}")
                 self.indice_letra = 0  # Reinicia al espacio en blanco
+            elif self.modo == "registro":
+                opciones = ["Sí", "No"]
+                seleccion = opciones[self.indice_tipo]
+                print(f"[DEBUG] Opción seleccionada: {seleccion}")
+                # Guardar el resultado como "1" para "Sí" y "0" para "No"
+                self.cantidad = str(self.indice_tipo)  # Índice 0 = No, Índice 1 = Sí
+                self.enviando = True  # Finaliza el proceso
             self.mostrar_estado()
+
+
 
     def enviar_datos(self):
         """Envía los datos según el modo actual."""
@@ -103,16 +111,26 @@ class EntradaDatos:
     def mostrar_estado(self):
         """Muestra el estado actual en el LCD."""
         self.lcd.clear()
-        if self.modo == "nombre":
+        if self.modo == "registro":
+            opciones = ["SI", "NO"]
+            opcion_actual = opciones[self.indice_tipo]
+            self.lcd.write("Registrarte?", line=1)
+            self.lcd.write(f"{opcion_actual}", line=2)
+        elif self.modo == "nombre":
             letra_actual = self.alfabeto[self.indice_letra]
-            self.lcd.write(f"Nombre: {self.nombre}{letra_actual}", line=1)
+            self.lcd.write("Nombre:", line=1)
+            print("Fins aquí")
+            self.lcd.write(f"{self.nombre}{letra_actual}", line=2)
         elif self.modo == "cantidad":
             numero_actual = self.numeros[self.indice_letra]
-            self.lcd.write(f"Cantidad:{self.cantidad}{numero_actual}", line=1)
+            self.lcd.write("Cantidad:", line=1)
+            self.lcd.write(f"{self.cantidad}{numero_actual}", line=2)
         elif self.modo == "tipo":
             tipo_actual = self.tipos_azucar[self.indice_tipo]
-            self.lcd.write(f"Tipo: {tipo_actual}", line=1)
+            self.lcd.write("Tipo:", line=1)
+            self.lcd.write(f"{tipo_actual}", line=2)
 
+        
     def run(self):
         """Mantiene la clase activa."""
         try:

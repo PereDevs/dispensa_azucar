@@ -15,18 +15,18 @@ except RuntimeWarning:
     pass  # Ignora el error si ya están limpios
 
 # Inicializar botones
-button1 = Button(PIN_BOTON1)  # Confirmar
-button2 = Button(PIN_BOTON2)  # Avanzar
-button3 = Button(PIN_BOTON3)  # Retroceder
+b_confirma = Button(PIN_BOTON1, bounce_time=0.02,pull_up=True,hold_time=3)
+b_adelante= Button(PIN_BOTON2, bounce_time=0.02,pull_up=True)
+b_atras = Button(PIN_BOTON3, bounce_time=0.02,pull_up=True)
 
 # Crear LCD
 lcd = LCD_I2C()
 
 # Crear instancia para introducir un nombre
 entrada_nombre = EntradaDatos(
-    pin_boton_adelante=button2,
-    pin_boton_atras=button3,
-    pin_boton_confirmar=button1,
+    pin_boton_adelante=b_adelante,
+    pin_boton_atras=b_atras,
+    pin_boton_confirmar=b_confirma,
     lcd=lcd,
     modo="nombre"  # Cambia a "cantidad" o "tipo" según lo necesario
 )
@@ -41,7 +41,7 @@ def confirmar_opcion_debug():
     print(f"[DEBUG] Nombre actual: {entrada_nombre.nombre}")
 
 # Asignar el método de depuración al botón confirmar
-button1.when_pressed = confirmar_opcion_debug
+b_confirma.when_pressed = confirmar_opcion_debug
 
 # Simulación de flujo para probar
 print("[INFO] Presiona el botón CONFIRMAR para agregar la letra seleccionada.")

@@ -1,7 +1,7 @@
 from classes.LCD_IC2_classe import LCD_I2C
 import RPi.GPIO as GPIO
-
 GPIO.cleanup()
+
 lcd = LCD_I2C()
 lcd.clear() 
 lcd.write("Cargando", line=1)
@@ -27,9 +27,9 @@ DB_CONFIG = {
 DATASET_PATH = "/home/admin/dispensa_azucar/dataset"
 ENCODINGS_PATH = os.path.join(DATASET_PATH, "encodings.pickle")
 PIN_SENSOR_TAZA = 24
-PIN_BOTON1 = 18
-PIN_BOTON2 = 19
-PIN_BOTON3 = 21
+PIN_BOTON1 = 18 #Confirma
+PIN_BOTON2 = 19 #Adelante
+PIN_BOTON3 = 21 #Atras
 
 # Pines de los motores para cada contenedor
 PIN_MOTOR_CONTENEDOR1 = 20 # Azucar blanco
@@ -42,15 +42,15 @@ except RuntimeWarning:
     pass  # Ignora el error si ya están limpios
 
 
-button1 = Button(PIN_BOTON1, bounce_time=0.02)
-button2 = Button(PIN_BOTON2, bounce_time=0.02)
-button3 = Button(PIN_BOTON3, bounce_time=0.02)
+b_confirma = Button(PIN_BOTON1, bounce_time=0.02,pull_up=True)
+b_adelante= Button(PIN_BOTON2, bounce_time=0.02,pull_up=True)
+b_atras = Button(PIN_BOTON3, bounce_time=0.02,pull_up=True)
 
 
 # Crear instancias de contenedores
-contenedor_blanco = Contenedor(capacidad_total=100, motor_pin=PIN_MOTOR_CONTENEDOR1, boton_pin=button1, lcd=lcd, db_config = DB_CONFIG,tipo_azucar=1)
-contenedor_moreno = Contenedor(capacidad_total=100, motor_pin=PIN_MOTOR_CONTENEDOR2, boton_pin=button1, lcd=lcd,db_config = DB_CONFIG,tipo_azucar=2)
-contenedor_edulcorante = Contenedor(capacidad_total=100, motor_pin=PIN_MOTOR_CONTENEDOR3, boton_pin=button1, lcd=lcd,db_config = DB_CONFIG,tipo_azucar=3)
+contenedor_blanco = Contenedor(capacidad_total=100, motor_pin=PIN_MOTOR_CONTENEDOR1, boton_pin=b_confirma, lcd=lcd, db_config = DB_CONFIG,tipo_azucar=1)
+contenedor_moreno = Contenedor(capacidad_total=100, motor_pin=PIN_MOTOR_CONTENEDOR2, boton_pin=b_confirma, lcd=lcd,db_config = DB_CONFIG,tipo_azucar=2)
+contenedor_edulcorante = Contenedor(capacidad_total=100, motor_pin=PIN_MOTOR_CONTENEDOR3, boton_pin=b_confirma, lcd=lcd,db_config = DB_CONFIG,tipo_azucar=3)
 
 # Inicialización de dispositivos
 try:
@@ -106,7 +106,12 @@ def proceso_principal():
                 lcd.write("Usuario no", line=1)
                 lcd.write("reconocido", line=2)
 
+                # entrada_registro = EntradaDatos(pin_boton_adelante=b_adelante, pin_boton_atras=b_atras, pin_boton_confirmar=b_confirma, lcd=lcd, modo="registro")
+                # entrada_registro.run()
+
                 intentos = int(input("¿Intentar registro? (1 para sí, 0 para no): "))
+                #intentos = int(entrada_registro.cantidad)  # 1 para "Sí", 0 para "No"
+
                 if intentos == 1:
                     # # Registro de nuevo usuario
                     # nombre = input("Introduce el nombre del usuario: ").strip()
@@ -114,23 +119,24 @@ def proceso_principal():
                     # tipoazucar = input("Tipo de azucar (1 -Blanco 2-Moreno 3-Edulcorante): ").strip()
                     # cantidadazucar = input("Cuántas cucharadas de azucar? ").strip()
                     # cantidadazucar_float = 4 * float(cantidadazucar)
+                    #print("Usuario eligió registrarse.")
                     
-                    button1.when_pressed = None
-                    button2.when_pressed = None
-                    button3.when_pressed = None
+                    b_confirma.when_pressed = None
+                    b_adelante.when_pressed = None
+                    b_atras.when_pressed = None
                     
                     # Crear instancias de EntradaDatos para cada tipo de entrada
-                    entrada_nombre = EntradaDatos(pin_boton_adelante=button2, pin_boton_atras=button3, pin_boton_confirmar=button1, lcd=lcd, modo="nombre")
-                    entrada_tipo = EntradaDatos(pin_boton_adelante=button2, pin_boton_atras=button3, pin_boton_confirmar=button1, lcd=lcd, modo="tipo")
-                    entrada_cantidad = EntradaDatos(pin_boton_adelante=button2, pin_boton_atras=button3, pin_boton_confirmar=button1, lcd=lcd, modo="cantidad")
+                    
+                    entrada_nombre = EntradaDatos(pin_boton_adelante=b_adelante, pin_boton_atras=b_atras, pin_boton_confirmar=b_confirma, lcd=lcd, modo="nombre")
+                    entrada_tipo = EntradaDatos(pin_boton_adelante=b_adelante, pin_boton_atras=b_atras, pin_boton_confirmar=b_confirma, lcd=lcd, modo="tipo")
+                    entrada_cantidad = EntradaDatos(pin_boton_adelante=b_adelante, pin_boton_atras=b_atras, pin_boton_confirmar=b_confirma, lcd=lcd, modo="cantidad")
 
                     # Detener todos los procesos paralelos antes de capturar datos
                     detener_camara()
                     lcd.clear()
 
                     # Capturar nombre
-                    lcd.write("Introduce tu", line=1)
-                    lcd.write("nombre:", line=2)
+                    lcd.write("Nombre:", line=1)
                     entrada_nombre.run()
                     nombre = entrada_nombre.nombre.strip()
                     if not nombre:
@@ -175,6 +181,7 @@ def proceso_principal():
                         nuevo_usuario.registrar_en_db()
 
                 elif intentos == 0:
+                    print("Usuario eligió no registrarse.Reconociendo de nuevo...")
                     # Reintentar reconocimiento
                     lcd.clear()
                     lcd.write("Intentando", line=1)
@@ -280,7 +287,7 @@ def main():
     while True:
         # Espera por pulsación del botón
         detener_camara()
-        button1.wait_for_press()
+        b_confirma.wait_for_press()
         lcd.clear()
         lcd.write("Procesando...", line=1)
         time.sleep(2)
