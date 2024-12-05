@@ -1,4 +1,4 @@
-```markdown
+
 # **Proyecto: Dispensador Inteligente de Azúcar**
 **Curso:** Prototipos IoT con Raspberry  
 **Alumno:** Pere Martin  
@@ -118,4 +118,4 @@ Este proyecto fue una oportunidad para aprender y mejorar habilidades técnicas 
 - Elegir materiales adecuados desde el inicio para evitar problemas mecánicos.
 
 El **“Dispensador Inteligente de Azúcar”** representa una base sólida para futuras mejoras y demuestra el potencial de integrar tecnologías emergentes en la vida cotidiana.
-```
+
