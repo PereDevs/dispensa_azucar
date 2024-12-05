@@ -1,4 +1,4 @@
-import RPi.GPIO as GPIO
+from gpiozero import Button
 import time
 
 class EntradaDatos:
@@ -21,20 +21,18 @@ class EntradaDatos:
         self.alfabeto = " " + "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         self.indice_letra = 0
         self.enviando = False
+        self.finalizado = False  # Indicador de finalización del modo
 
-        # Configuración de pines
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setup(self.boton_adelante, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        GPIO.setup(self.boton_atras, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        GPIO.setup(self.boton_confirmar, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        # Asignar eventos a los botones
+        self.boton_adelante.when_pressed = self.mover_adelante
+        self.boton_atras.when_pressed = self.mover_atras
+        self.boton_confirmar.when_pressed = self.confirmar_opcion
+        self.boton_confirmar.when_held = self.enviar_datos
 
-        self.mostrar_estado()
-
-    def mover_adelante(self, channel):
+    def mover_adelante(self):
         if not self.enviando:
-            if self.modo == "registro":
-                self.indice_tipo = (self.indice_tipo + 1) % 2  # Alternar entre 0 y 1
-            elif self.modo == "nombre":
+            print(f"[DEBUG] Botón adelante presionado en modo: {self.modo}")
+            if self.modo == "nombre":
                 self.indice_letra = (self.indice_letra + 1) % len(self.alfabeto)
             elif self.modo == "cantidad":
                 self.indice_letra = (self.indice_letra + 1) % len(self.numeros)
@@ -42,11 +40,10 @@ class EntradaDatos:
                 self.indice_tipo = (self.indice_tipo + 1) % len(self.tipos_azucar)
             self.mostrar_estado()
 
-    def mover_atras(self, channel):
+    def mover_atras(self):
         if not self.enviando:
-            if self.modo == "registro":
-                self.indice_tipo = (self.indice_tipo - 1) % 2  # Alternar entre 0 y 1
-            elif self.modo == "nombre":
+            print(f"[DEBUG] Botón atrás presionado en modo: {self.modo}")
+            if self.modo == "nombre":
                 self.indice_letra = (self.indice_letra - 1) % len(self.alfabeto)
             elif self.modo == "cantidad":
                 self.indice_letra = (self.indice_letra - 1) % len(self.numeros)
@@ -54,39 +51,44 @@ class EntradaDatos:
                 self.indice_tipo = (self.indice_tipo - 1) % len(self.tipos_azucar)
             self.mostrar_estado()
 
-    def confirmar_opcion(self, channel):
+    def confirmar_opcion(self):
         if not self.enviando:
+            print(f"[DEBUG] Botón confirmar presionado en modo: {self.modo}")
             if self.modo == "nombre":
                 letra = self.alfabeto[self.indice_letra]
                 if letra != " " or self.nombre:  # Evita múltiples espacios iniciales
                     self.nombre += letra
-                self.indice_letra = 0  # Reinicia al espacio en blanco
-            elif self.modo == "registro":
-                opciones = ["Sí", "No"]
-                seleccion = opciones[self.indice_tipo]
-                self.cantidad = str(self.indice_tipo)  # Índice 0 = No, Índice 1 = Sí
-                self.enviando = True  # Finaliza el proceso
+                self.indice_letra = 0
+            elif self.modo == "cantidad":
+                numero = self.numeros[self.indice_letra]
+                self.cantidad += numero
+            elif self.modo == "tipo":
+                pass  # En este caso, la selección ya está controlada por el índice
             self.mostrar_estado()
 
-    def enviar_datos(self, channel):
+    def enviar_datos(self):
+        """Envía los datos según el modo actual y marca el modo como finalizado."""
         if not self.enviando:
             self.enviando = True
             self.lcd.clear()
+
             if self.modo == "nombre":
-                self.lcd.write(f":{self.nombre}", line=1)
+                self.lcd.write(f"Nombre: {self.nombre}", line=1)
                 self.lcd.write("OK!", line=2)
             elif self.modo == "cantidad":
-                self.lcd.write(f"Cantidad:OK -  {self.cantidad}", line=1)
+                self.lcd.write(f"Cantidad: {self.cantidad}", line=1)
                 self.lcd.write("OK!", line=2)
             elif self.modo == "tipo":
                 tipo_seleccionado = self.tipos_azucar[self.indice_tipo]
                 self.lcd.write(f"Tipo: {tipo_seleccionado}", line=1)
                 self.lcd.write("OK!", line=2)
-            time.sleep(3)
-            self.reiniciar_datos()
-            self.mostrar_estado()
+
+            time.sleep(2)
+            self.finalizado = True  # Indica que el modo ha terminado
+            print(f"[DEBUG] Finalizado establecido en enviar_datos: {self.finalizado}")
 
     def reiniciar_datos(self):
+        """Reinicia los datos según el modo."""
         if self.modo == "nombre":
             self.nombre = ""
         elif self.modo == "cantidad":
@@ -95,15 +97,13 @@ class EntradaDatos:
             self.indice_tipo = 0
         self.indice_letra = 0
         self.enviando = False
+        print("[DEBUG] Datos reiniciados.")
 
     def mostrar_estado(self):
+        """Muestra el estado actual en el LCD."""
         self.lcd.clear()
-        if self.modo == "registro":
-            opciones = ["SI", "NO"]
-            opcion_actual = opciones[self.indice_tipo]
-            self.lcd.write("Registrarte?", line=1)
-            self.lcd.write(f"{opcion_actual}", line=2)
-        elif self.modo == "nombre":
+        print(f"[DEBUG] Mostrando estado para modo: {self.modo}")
+        if self.modo == "nombre":
             letra_actual = self.alfabeto[self.indice_letra]
             self.lcd.write("Nombre:", line=1)
             self.lcd.write(f"{self.nombre}{letra_actual}", line=2)
@@ -117,16 +117,9 @@ class EntradaDatos:
             self.lcd.write(f"{tipo_actual}", line=2)
 
     def run(self):
-        GPIO.add_event_detect(self.boton_adelante, GPIO.FALLING, callback=self.mover_adelante, bouncetime=200)
-        GPIO.add_event_detect(self.boton_atras, GPIO.FALLING, callback=self.mover_atras, bouncetime=200)
-        GPIO.add_event_detect(self.boton_confirmar, GPIO.FALLING, callback=self.confirmar_opcion, bouncetime=200)
-
-        try:
-            while True:
-                if GPIO.input(self.boton_adelante) == GPIO.LOW and GPIO.input(self.boton_atras) == GPIO.LOW:
-                    self.reiniciar_datos()
-                time.sleep(0.1)
-        except KeyboardInterrupt:
-            print("Saliendo...")
-        finally:
-            GPIO.cleanup()
+        """Ejecuta las acciones necesarias para el modo actual."""
+        print(f"[DEBUG] Ejecutando run. Estado de finalizado: {self.finalizado}")
+        if self.boton_adelante.is_pressed and self.boton_atras.is_pressed:
+            self.reiniciar_datos()
+            print("[DEBUG] Datos reiniciados en run.")
+        time.sleep(0.1)
