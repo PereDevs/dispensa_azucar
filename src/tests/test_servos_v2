@@ -31,18 +31,19 @@ def reset_all_motors():
     time.sleep(0.5)  # Esperar 0.5 segundos para que los motores se estabilicen
 
 try:
-    while True:
+    #while True:
         # Girar los motores a -90 grados
-        print("Girando todos los motores a -90 grados...")
+        """  print("Girando todos los motores a -90 grados...")
         servo1.ChangeDutyCycle(10)  # -90 grados
         servo2.ChangeDutyCycle(10)
         servo3.ChangeDutyCycle(10)
-        time.sleep(0.5)
+        """
+     #   time.sleep(0.5)
 
-     
+        reset_all_motors() 
 
 except KeyboardInterrupt:
-    reset_all_motors()
+    
     print("Finalizando programa...")
     # Detener PWM y limpiar los pines GPIO
     servo1.stop()

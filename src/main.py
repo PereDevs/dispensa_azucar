@@ -114,13 +114,14 @@ def proceso_principal():
 
                 if intentos == 1:
                     # # Registro de nuevo usuario
-                    nombre = input("Introduce el nombre del usuario: ").strip()
-                    id_usuario = UsuarioClass.obtener_nuevo_id(DB_CONFIG)
-                    tipoazucar = input("Tipo de azucar (1 -Blanco 2-Moreno 3-Edulcorante): ").strip()
-                    cantidadazucar = input("Cuántas cucharadas de azucar? ").strip()
-                    cantidadazucar_float = 4 * float(cantidadazucar)
+                    #nombre = input("Introduce el nombre del usuario: ").strip()
+                    #id_usuario = UsuarioClass.obtener_nuevo_id(DB_CONFIG)
+                    #tipoazucar = input("Tipo de azucar (1 -Blanco 2-Moreno 3-Edulcorante): ").strip()
+                    #cantidadazucar = input("Cuántas cucharadas de azucar? ").strip()
+                    #cantidadazucar_float = 4 * float(cantidadazucar)
                     #print("Usuario eligió registrarse.")
-                    """ 
+                    
+                    
                     b_confirma.when_pressed = None
                     b_adelante.when_pressed = None
                     b_atras.when_pressed = None
@@ -139,9 +140,11 @@ def proceso_principal():
                     lcd.write("Nombre:", line=1)
                     entrada_nombre.run()
                     nombre = entrada_nombre.nombre.strip()
+                    tipoazucar = 1
+                    cantidadazucar_float = 8
                     if not nombre:
                         raise ValueError("Nombre vacío. Inténtalo nuevamente.")
-                    
+                    """                     
                     # Capturar tipo de azúcar
                     lcd.clear()
                     lcd.write("Selecciona tipo", line=1)
@@ -154,8 +157,8 @@ def proceso_principal():
                     lcd.write("cantidad:", line=2)
                     entrada_cantidad.run()  # Esto espera hasta que el usuario confirme la cantidad
                     cantidadazucar = entrada_cantidad.cantidad.strip()
-                    cantidadazucar_float = 4 * float(cantidadazucar)  # Convertir a gramos
- """
+                    cantidadazucar_float = 4 * float(cantidadazucar)  # Convertir a gramos """
+ 
                     # Obtener nuevo ID para el usuario
                     id_usuario = UsuarioClass.obtener_nuevo_id(DB_CONFIG)
 
