@@ -1,14 +1,6 @@
 from classes.LCD_IC2_classe import LCD_I2C
 import RPi.GPIO as GPIO
-GPIO.cleanup()
-
-lcd = LCD_I2C()
-lcd.clear() 
-lcd.write("Cargando", line=1)
-lcd.write("Espera...", line=2)
-
 import os
-from gpiozero import Button,Device
 from picamera2 import Picamera2
 from classes.Usuario_class import UsuarioClass
 from classes.Reconocimiento_class import Reconocimiento
@@ -17,7 +9,16 @@ from classes.Contenedor_Class import Contenedor
 from classes.Entrada_Nombre_Classe import EntradaDatos
 import time
 
-# Configuración
+# Configuración de GPIO
+GPIO.setmode(GPIO.BCM)
+
+# Configuración inicial de LCD
+lcd = LCD_I2C()
+lcd.clear()
+lcd.write("Cargando", line=1)
+lcd.write("Espera...", line=2)
+
+# Configuración de pines
 DB_CONFIG = {
     'user': 'sugar',
     'password': '12345',
@@ -27,30 +28,33 @@ DB_CONFIG = {
 DATASET_PATH = "/home/admin/dispensa_azucar/dataset"
 ENCODINGS_PATH = os.path.join(DATASET_PATH, "encodings.pickle")
 PIN_SENSOR_TAZA = 24
-PIN_BOTON1 = 18 #Confirma
-PIN_BOTON2 = 19 #Adelante
-PIN_BOTON3 = 21 #Atras
+PIN_BOTON1 = 18  # Confirmar
+PIN_BOTON2 = 19  # Adelante
+PIN_BOTON3 = 21  # Atrás
 
 # Pines de los motores para cada contenedor
-PIN_MOTOR_CONTENEDOR1 = 20 # Azucar blanco
-PIN_MOTOR_CONTENEDOR2 = 12  # Azucar moreno
+PIN_MOTOR_CONTENEDOR1 = 20  # Azúcar blanco
+PIN_MOTOR_CONTENEDOR2 = 12  # Azúcar moreno
 PIN_MOTOR_CONTENEDOR3 = 26  # Edulcorante
 
-try:
-    GPIO.cleanup()
-except RuntimeWarning:
-    pass  # Ignora el error si ya están limpios
-
-
-b_confirma = Button(PIN_BOTON1, bounce_time=0.02,pull_up=True)
-b_adelante= Button(PIN_BOTON2, bounce_time=0.02,pull_up=True)
-b_atras = Button(PIN_BOTON3, bounce_time=0.02,pull_up=True)
-
+# Configuración de botones como entradas
+GPIO.setup(PIN_BOTON1, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(PIN_BOTON2, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(PIN_BOTON3, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 # Crear instancias de contenedores
-contenedor_blanco = Contenedor(capacidad_total=100, motor_pin=PIN_MOTOR_CONTENEDOR1, boton_pin=b_confirma, lcd=lcd, db_config = DB_CONFIG,tipo_azucar=1)
-contenedor_moreno = Contenedor(capacidad_total=100, motor_pin=PIN_MOTOR_CONTENEDOR2, boton_pin=b_confirma, lcd=lcd,db_config = DB_CONFIG,tipo_azucar=2)
-contenedor_edulcorante = Contenedor(capacidad_total=100, motor_pin=PIN_MOTOR_CONTENEDOR3, boton_pin=b_confirma, lcd=lcd,db_config = DB_CONFIG,tipo_azucar=3)
+contenedor_blanco = Contenedor(
+    capacidad_total=100, motor_pin=PIN_MOTOR_CONTENEDOR1, boton_pin=PIN_BOTON1,
+    lcd=lcd, db_config=DB_CONFIG, tipo_azucar=1
+)
+contenedor_moreno = Contenedor(
+    capacidad_total=100, motor_pin=PIN_MOTOR_CONTENEDOR2, boton_pin=PIN_BOTON1,
+    lcd=lcd, db_config=DB_CONFIG, tipo_azucar=2
+)
+contenedor_edulcorante = Contenedor(
+    capacidad_total=100, motor_pin=PIN_MOTOR_CONTENEDOR3, boton_pin=PIN_BOTON1,
+    lcd=lcd, db_config=DB_CONFIG, tipo_azucar=3
+)
 
 # Inicialización de dispositivos
 try:
@@ -62,13 +66,9 @@ except Exception as e:
     exit(1)
 
 
-
 def proceso_principal():
-    """Flujo principal del sistema."""
     global camera_active
-
     try:
-        # Verificar si la taza está presente antes de iniciar el proceso principal
         lcd.clear()
         lcd.write("Verificando", line=1)
         lcd.write("taza...", line=2)
@@ -91,77 +91,35 @@ def proceso_principal():
         lcd.write("cámara...", line=2)
         time.sleep(3)
 
-        # Capturar frame desde la cámara
         frame = picam2.capture_array()
         time.sleep(2)
 
-        # Intentar reconocer usuario
         reconocimiento = Reconocimiento(ENCODINGS_PATH, DB_CONFIG)
         id_usuario = reconocimiento.intentar_reconocer(frame)
         time.sleep(1)
 
         if id_usuario is None:
-            while id_usuario is None:  # 28 Nov: Bucle para reintentar reconocimiento
+            while id_usuario is None:
                 lcd.clear()
                 lcd.write("Usuario no", line=1)
                 lcd.write("reconocido", line=2)
 
-                # entrada_registro = EntradaDatos(pin_boton_adelante=b_adelante, pin_boton_atras=b_atras, pin_boton_confirmar=b_confirma, lcd=lcd, modo="registro")
-                # entrada_registro.run()
-
                 intentos = int(input("¿Intentar registro? (1 para sí, 0 para no): "))
-                #intentos = int(entrada_registro.cantidad)  # 1 para "Sí", 0 para "No"
 
                 if intentos == 1:
-                    # # Registro de nuevo usuario
-                    #nombre = input("Introduce el nombre del usuario: ").strip()
-                    #id_usuario = UsuarioClass.obtener_nuevo_id(DB_CONFIG)
-                    #tipoazucar = input("Tipo de azucar (1 -Blanco 2-Moreno 3-Edulcorante): ").strip()
-                    #cantidadazucar = input("Cuántas cucharadas de azucar? ").strip()
-                    #cantidadazucar_float = 4 * float(cantidadazucar)
-                    #print("Usuario eligió registrarse.")
-                    
-                    
-                    b_confirma.when_pressed = None
-                    b_adelante.when_pressed = None
-                    b_atras.when_pressed = None
-                    
-                    # Crear instancias de EntradaDatos para cada tipo de entrada
-                    
-                    entrada_nombre = EntradaDatos(pin_boton_adelante=b_adelante, pin_boton_atras=b_atras, pin_boton_confirmar=b_confirma, lcd=lcd, modo="nombre")
-                    entrada_tipo = EntradaDatos(pin_boton_adelante=b_adelante, pin_boton_atras=b_atras, pin_boton_confirmar=b_confirma, lcd=lcd, modo="tipo")
-                    entrada_cantidad = EntradaDatos(pin_boton_adelante=b_adelante, pin_boton_atras=b_atras, pin_boton_confirmar=b_confirma, lcd=lcd, modo="cantidad")
-
-                    # Detener todos los procesos paralelos antes de capturar datos
-                    detener_camara()
-                    lcd.clear()
-
-                    # Capturar nombre
-                    lcd.write("Nombre:", line=1)
+                    entrada_nombre = EntradaDatos(
+                        pin_boton_adelante=PIN_BOTON2,
+                        pin_boton_atras=PIN_BOTON3,
+                        pin_boton_confirmar=PIN_BOTON1,
+                        lcd=lcd,
+                        modo="nombre"
+                    )
                     entrada_nombre.run()
                     nombre = entrada_nombre.nombre.strip()
                     tipoazucar = 1
                     cantidadazucar_float = 8
-                    if not nombre:
-                        raise ValueError("Nombre vacío. Inténtalo nuevamente.")
-                    """                     
-                    # Capturar tipo de azúcar
-                    lcd.clear()
-                    lcd.write("Selecciona tipo", line=1)
-                    entrada_tipo.run()  # Esto espera hasta que el usuario confirme el tipo
-                    tipoazucar = entrada_tipo.indice_tipo + 1  # Convertir índice a valor numérico (1, 2, 3)
 
-                    # Capturar cantidad de azúcar
-                    lcd.clear()
-                    lcd.write("Introduce", line=1)
-                    lcd.write("cantidad:", line=2)
-                    entrada_cantidad.run()  # Esto espera hasta que el usuario confirme la cantidad
-                    cantidadazucar = entrada_cantidad.cantidad.strip()
-                    cantidadazucar_float = 4 * float(cantidadazucar)  # Convertir a gramos """
- 
-                    # Obtener nuevo ID para el usuario
                     id_usuario = UsuarioClass.obtener_nuevo_id(DB_CONFIG)
-
                     nuevo_usuario = UsuarioClass(
                         nombre, id_usuario, DB_CONFIG, DATASET_PATH, ENCODINGS_PATH, tipoazucar, cantidadazucar_float
                     )
@@ -172,32 +130,16 @@ def proceso_principal():
                             lcd.write(f"{i}...mira a camara", line=2)
                             time.sleep(1)
 
-                        
                         nuevo_usuario.capturar_imagenes(picam2)
-
                         lcd.clear()
                         lcd.write("Entrenando...", line=1)
                         time.sleep(2)
                         nuevo_usuario.entrenar_usuario()
                         reconocimiento.cargar_encodings()
-
                         nuevo_usuario.registrar_en_db()
 
-                elif intentos == 0:
-                    print("Usuario eligió no registrarse.Reconociendo de nuevo...")
-                    # Reintentar reconocimiento
-                    lcd.clear()
-                    lcd.write("Intentando", line=1)
-                    lcd.write("reconocer...", line=2)
-                    time.sleep(3)
-
-                    frame = picam2.capture_array()
-                    id_usuario = reconocimiento.intentar_reconocer(frame)
-
-            # Cuando se reconoce el usuario, continuar el flujo
         if id_usuario:
             lcd.clear()
-            
             usuario = UsuarioClass.from_db_by_id(
                 id_usuario=id_usuario,
                 db_config=DB_CONFIG,
@@ -211,14 +153,10 @@ def proceso_principal():
             resultado = servir_azucar(usuario)
             print(f"[INFO] Resultado del servicio: {resultado}")
 
-            # Mostrar información del usuario en la LCD
-            reconocimiento.mostrar_informacion(lcd, id_usuario)  # Llamada añadida
-
             lcd.clear()
             lcd.write("Proceso completo!", line=1)
             lcd.write("Retira tu taza", line=2)
             time.sleep(3)
-
 
     except KeyboardInterrupt:
         lcd.clear()
@@ -226,9 +164,9 @@ def proceso_principal():
         lcd.write("detenido", line=2)
         time.sleep(5)
         lcd.clear()
-        gpiozero.Device.close_all()
+        GPIO.cleanup()
         exit(0)
-        
+
     except Exception as e:
         lcd.clear()
         lcd.write("Error", line=1)
@@ -236,65 +174,26 @@ def proceso_principal():
         print(f"[ERROR] {e}")
         time.sleep(5)
         lcd.clear()
-        lcd.close()
+        GPIO.cleanup()
+
     finally:
-        detener_camara()  # Detener la cámara siempre al finalizar
-        print("[INFO] Retornando al estado de espera del botón.")  # Log de depuración
-        main()
-        
-def servir_azucar(usuario):
-    """
-    Sirve azucar según las preferencias del usuario.
-    """
-    tipo_azucar = usuario.tipo_azucar  # 1: Blanco, 2: Moreno, 3: Edulcorante
-    cantidad = usuario.cantidad_azucar  # Cantidad en gramos
+        detener_camara()
 
-    if tipo_azucar == 1:
-        resultado = contenedor_blanco.dispensar_azucar(cantidad)
-    elif tipo_azucar == 2:
-        resultado = contenedor_moreno.dispensar_azucar(cantidad)
-    elif tipo_azucar == 3:
-        resultado = contenedor_edulcorante.dispensar_azucar(cantidad)
-    else:
-        lcd.clear()
-        lcd.write("Error: Tipo", line=1)
-        lcd.write("de azucar", line=2)
-        return "Error: Tipo de azucar no válido"
-
-    if "Error" in resultado:
-        lcd.clear()
-        lcd.write("Error con el", line=1)
-        lcd.write("contenedor", line=2)
-        time.sleep(5)
-    else:
-        lcd.clear()
-        lcd.write("Azucar listo!", line=1)
-        time.sleep(3)
-
-    return resultado
-
-def detener_camara():
-    """Detiene la cámara si está activa."""
-    global camera_active
-    if camera_active:
-        picam2.stop()
-        camera_active = False
-        print("[INFO] Cámara detenida.")  # Log de depuración        
 
 def main():
-    """Bucle principal de espera por botón."""
     lcd.clear()
     lcd.write("Pulsa enter", line=1)
     lcd.write("para el azucar", line=2)
 
     while True:
-        # Espera por pulsación del botón
         detener_camara()
-        b_confirma.wait_for_press()
+        while GPIO.input(PIN_BOTON1) == GPIO.HIGH:
+            time.sleep(0.1)  # Espera hasta que el botón sea presionado
         lcd.clear()
         lcd.write("Procesando...", line=1)
         time.sleep(2)
-        proceso_principal()  # Volver al proceso principal
+        proceso_principal()
+
 
 if __name__ == "__main__":
     main()
