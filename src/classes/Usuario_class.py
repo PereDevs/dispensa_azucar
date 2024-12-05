@@ -103,7 +103,7 @@ class UsuarioClass:
 
             # <comentario>Código modificado por ChatGPT</comentario>
             # Iniciar el servicio de azucar tras registrar
-            self.iniciar_servicio_azucar()
+            #self.iniciar_servicio_azucar()
 
         except mysql.connector.Error as err:
             print(f"[ERROR] No se pudo registrar en la base de datos: {err}")

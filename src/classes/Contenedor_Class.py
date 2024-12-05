@@ -81,7 +81,7 @@ class Contenedor:
         self.controlar_motor(90)
         self.lcd.clear()
         self.lcd.write(f"Sirviendo {cantidad}g", line=1)
-        time.sleep(cantidad * 0.5)  # Simular tiempo de dispensado
+        time.sleep(cantidad * 0.2)  # Simular tiempo de dispensado
         self.controlar_motor(0)  # Cerrar el dispensador
 
         # Registrar el consumo

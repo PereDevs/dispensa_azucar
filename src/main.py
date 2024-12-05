@@ -14,7 +14,7 @@ from classes.Usuario_class import UsuarioClass
 from classes.Reconocimiento_class import Reconocimiento
 from classes.taza_class import Taza
 from classes.Contenedor_Class import Contenedor
-from classes.EntradaDatos_v2 import EntradaDatosCompletos
+from classes.Entrada_Nombre_Classe import EntradaDatos
 import time
 
 # Configuración
@@ -110,38 +110,57 @@ def proceso_principal():
                 # entrada_registro.run()
 
                 intentos = int(input("¿Intentar registro? (1 para sí, 0 para no): "))
-                #intentos = int(entrada_registro.cantidad)  # 1 para "Sí", 0 para "No"
+                # intentos = int(entrada_registro.cantidad)  # 1 para "Sí", 0 para "No"
 
                 if intentos == 1:
                     # # Registro de nuevo usuario
-                    #nombre = input("Introduce el nombre del usuario: ").strip()
+                    nombre = input("Introduce el nombre del usuario: ").strip()
+                    id_usuario = UsuarioClass.obtener_nuevo_id(DB_CONFIG)
+                    tipoazucar = input("Tipo de azucar (1 -Blanco 2-Moreno 3-Edulcorante): ").strip()
+                    cantidadazucar = input("Cuántas cucharadas de azucar? ").strip()
+                    cantidadazucar_float = 4 * float(cantidadazucar)
+                    #print("Usuario eligió registrarse.")
+                    """ 
+                    b_confirma.when_pressed = None
+                    b_adelante.when_pressed = None
+                    b_atras.when_pressed = None
                     
-                    """Flujo para registrar un nuevo usuario."""
-                    flujo_datos = EntradaDatosCompletos(PIN_BOTON2, PIN_BOTON3, PIN_BOTON1, lcd, DB_CONFIG)
-
-                    # Ejecutar el flujo para capturar nombre, cantidad y tipo de azúcar
-                    flujo_datos.run()
-
-                    # Una vez completado, obtener los datos
-                    nombre = flujo_datos.nombre.strip()
-                    tipo_azucar = flujo_datos.tipo_actual + 1  # Convertir índice a valor numérico (1, 2, 3)
+                    # Crear instancias de EntradaDatos para cada tipo de entrada
                     
-                    try:
-                        cucharadas = int(flujo_datos.cantidad.strip())  # Asegurarse de que sea un entero
-                        cantidad_gramos = cucharadas * 4.0  # Convertir a gramos como float
-                    except ValueError:
-                        lcd.clear()
-                        lcd.write("Error en cantidad", line=1)
-                        lcd.write("Reintentar", line=2)
-                        time.sleep(3)
-                        return  # Salir si la cantidad no es válida
+                    entrada_nombre = EntradaDatos(pin_boton_adelante=b_adelante, pin_boton_atras=b_atras, pin_boton_confirmar=b_confirma, lcd=lcd, modo="nombre")
+                    entrada_tipo = EntradaDatos(pin_boton_adelante=b_adelante, pin_boton_atras=b_atras, pin_boton_confirmar=b_confirma, lcd=lcd, modo="tipo")
+                    entrada_cantidad = EntradaDatos(pin_boton_adelante=b_adelante, pin_boton_atras=b_atras, pin_boton_confirmar=b_confirma, lcd=lcd, modo="cantidad")
 
+                    # Detener todos los procesos paralelos antes de capturar datos
+                    detener_camara()
+                    lcd.clear()
+
+                    # Capturar nombre
+                    lcd.write("Nombre:", line=1)
+                    entrada_nombre.run()
+                    nombre = entrada_nombre.nombre.strip()
+                    if not nombre:
+                        raise ValueError("Nombre vacío. Inténtalo nuevamente.")
                     
+                    # Capturar tipo de azúcar
+                    lcd.clear()
+                    lcd.write("Selecciona tipo", line=1)
+                    entrada_tipo.run()  # Esto espera hasta que el usuario confirme el tipo
+                    tipoazucar = entrada_tipo.indice_tipo + 1  # Convertir índice a valor numérico (1, 2, 3)
+
+                    # Capturar cantidad de azúcar
+                    lcd.clear()
+                    lcd.write("Introduce", line=1)
+                    lcd.write("cantidad:", line=2)
+                    entrada_cantidad.run()  # Esto espera hasta que el usuario confirme la cantidad
+                    cantidadazucar = entrada_cantidad.cantidad.strip()
+                    cantidadazucar_float = 4 * float(cantidadazucar)  # Convertir a gramos
+ """
                     # Obtener nuevo ID para el usuario
                     id_usuario = UsuarioClass.obtener_nuevo_id(DB_CONFIG)
 
                     nuevo_usuario = UsuarioClass(
-                        nombre, id_usuario, DB_CONFIG, DATASET_PATH, ENCODINGS_PATH, tipo_azucar, cantidad_gramos
+                        nombre, id_usuario, DB_CONFIG, DATASET_PATH, ENCODINGS_PATH, tipoazucar, cantidadazucar_float
                     )
                     if not nuevo_usuario.existe_en_db():
                         for i in range(5, 0, -1):
@@ -160,11 +179,7 @@ def proceso_principal():
                         reconocimiento.cargar_encodings()
 
                         nuevo_usuario.registrar_en_db()
-                        lcd.clear()
-                        lcd.write("Usuario guardado", line=1)
-                        lcd.write("¡Gracias!", line=2)
-                        time.sleep(3)
-
+                        
                 elif intentos == 0:
                     print("Usuario eligió no registrarse.Reconociendo de nuevo...")
                     # Reintentar reconocimiento

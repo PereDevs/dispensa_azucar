@@ -33,12 +33,13 @@ def reset_all_motors():
 try:
     #while True:
         # Girar los motores a -90 grados
-        """  print("Girando todos los motores a -90 grados...")
-        servo1.ChangeDutyCycle(10)  # -90 grados
-        servo2.ChangeDutyCycle(10)
-        servo3.ChangeDutyCycle(10)
-        """
-     #   time.sleep(0.5)
+        print("Girando todos los motores a -90 grados...")
+        servo1.ChangeDutyCycle(20)  # -90 grados
+        servo2.ChangeDutyCycle(20)
+        servo3.ChangeDutyCycle(20)
+        
+     #  
+        time.sleep(1)
 
         reset_all_motors() 
 
